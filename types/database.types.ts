@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -120,6 +120,39 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           created_at: string
@@ -203,6 +236,39 @@ export type Database = {
           },
         ]
       }
+      finance_accounts: {
+        Row: {
+          created_at: string
+          currency: string
+          current_balance: number
+          id: string
+          is_active: boolean
+          name: string
+          opening_balance: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          current_balance?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          opening_balance?: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          current_balance?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          opening_balance?: number
+          type?: string
+        }
+        Relationships: []
+      }
       finance_company_totals: {
         Row: {
           as_of_date: string
@@ -229,6 +295,189 @@ export type Database = {
           revenue_pipeline_usd?: number
         }
         Relationships: []
+      }
+      finance_creditors: {
+        Row: {
+          amount_owed: number
+          created_at: string
+          due_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_owed: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_owed?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_payment_notices: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          payee: string
+          period: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          payee: string
+          period: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          payee?: string
+          period?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_reports: {
+        Row: {
+          content: Json
+          generated_at: string
+          generated_by: string | null
+          id: string
+          period_end: string
+          period_start: string
+          published_at: string | null
+          published_by: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          content?: Json
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          period_end: string
+          period_start: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          type: string
+        }
+        Update: {
+          content?: Json
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      finance_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          category: string | null
+          counterparty: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          dlap_share_pct: number | null
+          id: string
+          is_dlap: boolean
+          is_reversed: boolean
+          reference_no: string | null
+          reverses_transaction_id: string | null
+          source: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          category?: string | null
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          dlap_share_pct?: number | null
+          id?: string
+          is_dlap?: boolean
+          is_reversed?: boolean
+          reference_no?: string | null
+          reverses_transaction_id?: string | null
+          source?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          category?: string | null
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          dlap_share_pct?: number | null
+          id?: string
+          is_dlap?: boolean
+          is_reversed?: boolean
+          reference_no?: string | null
+          reverses_transaction_id?: string | null
+          source?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_reverses_transaction_id_fkey"
+            columns: ["reverses_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "finance_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       kpi_feed: {
         Row: {
@@ -620,6 +869,38 @@ export type Database = {
     }
     Functions: {
       current_role: { Args: never; Returns: string }
+      get_account_balance_as_of: {
+        Args: { p_account_id: string; p_as_of_date: string }
+        Returns: number
+      }
+      get_unusual_transactions: {
+        Args: { p_account_id: string; p_check_date: string }
+        Returns: {
+          account_id: string
+          amount: number
+          category: string | null
+          counterparty: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          dlap_share_pct: number | null
+          id: string
+          is_dlap: boolean
+          is_reversed: boolean
+          reference_no: string | null
+          reverses_transaction_id: string | null
+          source: string
+          type: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "finance_transactions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       refresh_kpi_feed: { Args: never; Returns: undefined }
     }
     Enums: {
@@ -772,4 +1053,13 @@ export type ActivityStatus = "online" | "offline";
 export type ActivitySource = "csv" | "api";
 export type DeliverySource = "manual" | "github" | "illustrative";
 export type ActionItemStatus = "open" | "done";
-export type UserRole = "admin" | "exec" | "viewer";
+export type UserRole = "admin" | "exec" | "viewer" | "finance_officer" | "finance_manager";
+
+// Finance module (Phase 1)
+export type FinanceAccountType = "bank" | "cash" | "mobile-money";
+export type FinanceTransactionType = "debit" | "credit";
+export type FinanceTransactionSource = "manual" | "excel-import";
+export type FinanceReportType = "daily" | "weekly" | "monthly";
+export type FinanceReportStatus = "draft" | "published";
+export type FinanceCreditorStatus = "outstanding" | "partially_paid" | "paid";
+export type FinancePaymentNoticeStatus = "scheduled" | "sent" | "paid";

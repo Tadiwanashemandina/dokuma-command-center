@@ -30,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/company", label: "Company Overview", icon: Building2 },
   { href: "/projects", label: "Project Portfolio", icon: FolderKanban },
   { href: "/people", label: "People & Delivery", icon: Users, roles: ["admin", "exec"] },
-  { href: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "exec"] },
+  { href: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "exec", "finance_officer", "finance_manager"] },
   { href: "/risks", label: "Risks, Issues & Decisions", icon: ShieldAlert },
   { href: "/clients", label: "Client & Stakeholder", icon: Handshake },
   { href: "/delivery", label: "Software Delivery", icon: GitBranch },
