@@ -39,7 +39,7 @@ export default async function NewMonthlyReportPage({
         </p>
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite />
 
       <form className="space-y-6">
         <input type="hidden" name="period_start" value={periodStart} />
@@ -134,11 +134,11 @@ export default async function NewMonthlyReportPage({
         </div>
 
         <div className="flex gap-3">
-          <Button type="submit" name="action" value="draft" formAction={createMonthlyReportAction} variant="outline">
+          <Button type="submit" formAction={createMonthlyReportAction.bind(null, false)} variant="outline">
             Save as Draft
           </Button>
           {canPublish && (
-            <Button type="submit" name="action" value="publish" formAction={createMonthlyReportAction} className="bg-navy hover:bg-navy/90">
+            <Button type="submit" formAction={createMonthlyReportAction.bind(null, true)} className="bg-navy hover:bg-navy/90">
               Save &amp; Publish
             </Button>
           )}

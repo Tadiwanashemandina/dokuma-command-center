@@ -89,12 +89,18 @@ async function createPeriodReport(
   return report.id as string;
 }
 
-export async function createWeeklyReportAction(formData: FormData) {
+/**
+ * The publish/draft choice is bound in from the page (`.bind(null, true|false)`
+ * on the two submit buttons' formAction) rather than read from a form field.
+ * React warns — and does not guarantee — that a button's name/value survive
+ * when formAction is a Server Action function reference, so a plain form
+ * field here would be unreliable for something this consequential.
+ */
+export async function createWeeklyReportAction(publishImmediately: boolean, formData: FormData) {
   const profile = await requireRole(["admin", "finance_officer", "finance_manager"]);
 
   const periodStart = formData.get("period_start") as string;
   const periodEnd = formData.get("period_end") as string;
-  const publishImmediately = formData.get("action") === "publish";
 
   const parsed = weeklyReportFreeTextSchema.safeParse({
     executive_summary: formData.get("executive_summary") || "",
@@ -111,12 +117,11 @@ export async function createWeeklyReportAction(formData: FormData) {
   redirect(`/finance/reports/${id}`);
 }
 
-export async function createMonthlyReportAction(formData: FormData) {
+export async function createMonthlyReportAction(publishImmediately: boolean, formData: FormData) {
   const profile = await requireRole(["admin", "finance_officer", "finance_manager"]);
 
   const periodStart = formData.get("period_start") as string;
   const periodEnd = formData.get("period_end") as string;
-  const publishImmediately = formData.get("action") === "publish";
 
   const parsed = monthlyReportFreeTextSchema.safeParse({
     executive_summary: formData.get("executive_summary") || "",

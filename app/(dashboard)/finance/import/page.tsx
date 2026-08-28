@@ -14,7 +14,7 @@ export default async function FinanceImportPage() {
         <p className="mt-1 text-sm text-muted-foreground">Import transactions from a bank/mobile-money statement export.</p>
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite />
 
       <ImportWizard accounts={accounts ?? []} />
     </div>

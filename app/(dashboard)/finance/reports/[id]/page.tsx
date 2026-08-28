@@ -10,6 +10,7 @@ import { publishReportAction } from "../actions";
 export default async function ReportViewPage({ params }: { params: Promise<{ id: string }> }) {
   const profile = await requireRole(["admin", "exec", "finance_officer", "finance_manager"]);
   const canPublish = ["admin", "finance_manager"].includes(profile.role);
+  const canWrite = ["admin", "finance_officer", "finance_manager"].includes(profile.role);
 
   const { id } = await params;
   const supabase = await createClient();
@@ -51,7 +52,7 @@ export default async function ReportViewPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite={canWrite} />
 
       {report.type === "daily" ? (
         <div className="space-y-4">

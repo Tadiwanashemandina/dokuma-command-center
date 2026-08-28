@@ -10,15 +10,19 @@ const TABS = [
   { href: "/finance/reports", label: "Reports" },
   { href: "/finance/creditors", label: "Creditors" },
   { href: "/finance/payment-notices", label: "Payment Notices" },
-  { href: "/finance/import", label: "Import" },
+  { href: "/finance/import", label: "Import", writerOnly: true },
 ];
 
-export function FinanceSubNav() {
+/** `canWrite` hides tabs a read-only (exec) user can see but would just get
+ * redirected away from — the underlying requireRole() on each page is what
+ * actually enforces this; this is UX polish, not the security boundary. */
+export function FinanceSubNav({ canWrite = true }: { canWrite?: boolean }) {
   const pathname = usePathname();
+  const visibleTabs = TABS.filter((tab) => canWrite || !tab.writerOnly);
 
   return (
     <div className="flex gap-1 overflow-x-auto border-b border-border/60 pb-px">
-      {TABS.map((tab) => {
+      {visibleTabs.map((tab) => {
         const active = tab.href === "/finance" ? pathname === "/finance" : pathname.startsWith(tab.href);
         return (
           <Link

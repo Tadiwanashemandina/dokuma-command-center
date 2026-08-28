@@ -38,7 +38,7 @@ export default async function PaymentNoticesPage() {
         {canCreate && <PaymentNoticeForm />}
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite={canCreate} />
 
       <Card className="rounded-2xl">
         <CardContent className="p-0">

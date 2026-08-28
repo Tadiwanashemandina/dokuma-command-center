@@ -8,7 +8,8 @@ import { CashPositionPanel } from "@/components/finance/cash-position-panel";
 import { getCashPosition } from "@/lib/finance/balances";
 
 export default async function FinancePage() {
-  await requireRole(["admin", "exec", "finance_officer", "finance_manager"]);
+  const profile = await requireRole(["admin", "exec", "finance_officer", "finance_manager"]);
+  const canWrite = ["admin", "finance_officer", "finance_manager"].includes(profile.role);
   const supabase = await createClient();
 
   const [{ data: totals }, { data: projectFinance }, cashPosition] = await Promise.all([
@@ -29,7 +30,7 @@ export default async function FinancePage() {
         </p>
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite={canWrite} />
 
       <div className="space-y-8 pt-2">
         <CashPositionPanel initialData={cashPosition} />

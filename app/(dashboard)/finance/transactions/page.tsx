@@ -32,7 +32,7 @@ export default async function TransactionsPage() {
         {canWrite && <TransactionForm accounts={accounts ?? []} />}
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite={canWrite} />
 
       <Card className="rounded-2xl">
         <CardContent className="p-0">

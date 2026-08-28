@@ -25,7 +25,7 @@ export default async function FinanceReportsPage() {
         <p className="mt-1 text-sm text-muted-foreground">Daily, weekly and monthly reports.</p>
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite={canCreate} />
 
       {canCreate && (
         <div className="flex flex-wrap gap-3">

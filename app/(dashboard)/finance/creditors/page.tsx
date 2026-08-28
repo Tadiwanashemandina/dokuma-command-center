@@ -27,7 +27,7 @@ export default async function CreditorsPage() {
         {canCreate && <CreditorForm />}
       </div>
 
-      <FinanceSubNav />
+      <FinanceSubNav canWrite={canCreate} />
 
       <Card className="rounded-2xl">
         <CardContent className="p-0">
