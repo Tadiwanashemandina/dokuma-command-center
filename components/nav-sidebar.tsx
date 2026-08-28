@@ -14,6 +14,7 @@ import {
   GitBranch,
   CalendarClock,
   UploadCloud,
+  UserSquare2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/database.types";
@@ -31,6 +32,12 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/projects", label: "Project Portfolio", icon: FolderKanban },
   { href: "/people", label: "People & Delivery", icon: Users, roles: ["admin", "exec"] },
   { href: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "exec", "finance_officer", "finance_manager"] },
+  {
+    href: "/hr",
+    label: "HR",
+    icon: UserSquare2,
+    roles: ["admin", "exec", "employee", "supervisor", "hr_officer", "hr_manager"],
+  },
   { href: "/risks", label: "Risks, Issues & Decisions", icon: ShieldAlert },
   { href: "/clients", label: "Client & Stakeholder", icon: Handshake },
   { href: "/delivery", label: "Software Delivery", icon: GitBranch },

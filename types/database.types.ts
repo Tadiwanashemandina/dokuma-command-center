@@ -120,6 +120,80 @@ export type Database = {
         }
         Relationships: []
       }
+      applications: {
+        Row: {
+          candidate_id: string
+          id: string
+          job_opening_id: string
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          id?: string
+          job_opening_id: string
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          id?: string
+          job_opening_id?: string
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_job_opening_id_fkey"
+            columns: ["job_opening_id"]
+            isOneToOne: false
+            referencedRelation: "job_openings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_records: {
+        Row: {
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          source: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          source?: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          source?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -150,6 +224,33 @@ export type Database = {
           entity_type?: string
           id?: string
           metadata?: Json | null
+        }
+        Relationships: []
+      }
+      candidates: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          resume_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          resume_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          resume_url?: string | null
         }
         Relationships: []
       }
@@ -232,6 +333,94 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_tasks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          employee_id: string
+          id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          employee_id: string
+          id?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string
+          id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_tasks_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          created_at: string
+          department: string | null
+          employment_date: string | null
+          full_name: string
+          id: string
+          jira_account_id: string | null
+          role_title: string | null
+          status: string
+          supervisor_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          employment_date?: string | null
+          full_name: string
+          id?: string
+          jira_account_id?: string | null
+          role_title?: string | null
+          status?: string
+          supervisor_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          employment_date?: string | null
+          full_name?: string
+          id?: string
+          jira_account_id?: string | null
+          role_title?: string | null
+          status?: string
+          supervisor_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -479,6 +668,115 @@ export type Database = {
           },
         ]
       }
+      jira_tasks_cache: {
+        Row: {
+          due_date: string | null
+          employee_id: string
+          fetched_at: string
+          id: string
+          jira_issue_key: string
+          status: string | null
+          summary: string | null
+          url: string | null
+        }
+        Insert: {
+          due_date?: string | null
+          employee_id: string
+          fetched_at?: string
+          id?: string
+          jira_issue_key: string
+          status?: string | null
+          summary?: string | null
+          url?: string | null
+        }
+        Update: {
+          due_date?: string | null
+          employee_id?: string
+          fetched_at?: string
+          id?: string
+          jira_issue_key?: string
+          status?: string | null
+          summary?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jira_tasks_cache_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_descriptions: {
+        Row: {
+          created_at: string
+          effective_date: string
+          employee_id: string | null
+          id: string
+          reporting_line: string | null
+          requirements: string | null
+          responsibilities: string | null
+          role_title: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          effective_date?: string
+          employee_id?: string | null
+          id?: string
+          reporting_line?: string | null
+          requirements?: string | null
+          responsibilities?: string | null
+          role_title?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          effective_date?: string
+          employee_id?: string | null
+          id?: string
+          reporting_line?: string | null
+          requirements?: string | null
+          responsibilities?: string | null
+          role_title?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_descriptions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_openings: {
+        Row: {
+          department: string | null
+          id: string
+          opened_at: string
+          status: string
+          title: string
+        }
+        Insert: {
+          department?: string | null
+          id?: string
+          opened_at?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          department?: string | null
+          id?: string
+          opened_at?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       kpi_feed: {
         Row: {
           as_of_date: string
@@ -506,6 +804,139 @@ export type Database = {
           unit?: string | null
           updated_at?: string
           value?: number | null
+        }
+        Relationships: []
+      }
+      leave_balances: {
+        Row: {
+          days_allocated: number
+          days_remaining: number | null
+          days_used: number
+          employee_id: string
+          leave_type_id: string
+          year: number
+        }
+        Insert: {
+          days_allocated: number
+          days_remaining?: number | null
+          days_used?: number
+          employee_id: string
+          leave_type_id: string
+          year: number
+        }
+        Update: {
+          days_allocated?: number
+          days_remaining?: number | null
+          days_used?: number
+          employee_id?: string
+          leave_type_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_balances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          created_at: string
+          days_requested: number
+          employee_id: string
+          end_date: string
+          hr_comment: string | null
+          hr_decision_at: string | null
+          id: string
+          leave_type_id: string
+          reason: string | null
+          start_date: string
+          status: string
+          supervisor_comment: string | null
+          supervisor_decision_at: string | null
+          supervisor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          days_requested: number
+          employee_id: string
+          end_date: string
+          hr_comment?: string | null
+          hr_decision_at?: string | null
+          id?: string
+          leave_type_id: string
+          reason?: string | null
+          start_date: string
+          status?: string
+          supervisor_comment?: string | null
+          supervisor_decision_at?: string | null
+          supervisor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          days_requested?: number
+          employee_id?: string
+          end_date?: string
+          hr_comment?: string | null
+          hr_decision_at?: string | null
+          id?: string
+          leave_type_id?: string
+          reason?: string | null
+          start_date?: string
+          status?: string
+          supervisor_comment?: string | null
+          supervisor_decision_at?: string | null
+          supervisor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          days_per_year: number
+          id: string
+          name: string
+        }
+        Insert: {
+          days_per_year: number
+          id?: string
+          name: string
+        }
+        Update: {
+          days_per_year?: number
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -605,6 +1036,57 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_reviews: {
+        Row: {
+          comments: string | null
+          created_at: string
+          employee_id: string
+          goals: Json
+          id: string
+          period: string
+          rating: string | null
+          reviewer_id: string | null
+          status: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          employee_id: string
+          goals?: Json
+          id?: string
+          period: string
+          rating?: string | null
+          reviewer_id?: string | null
+          status?: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          employee_id?: string
+          goals?: Json
+          id?: string
+          period?: string
+          rating?: string | null
+          reviewer_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_reviews_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -818,6 +1300,47 @@ export type Database = {
           },
         ]
       }
+      training_records: {
+        Row: {
+          certificate_url: string | null
+          completed_at: string | null
+          course_name: string
+          created_at: string
+          employee_id: string
+          expires_at: string | null
+          id: string
+          provider: string | null
+        }
+        Insert: {
+          certificate_url?: string | null
+          completed_at?: string | null
+          course_name: string
+          created_at?: string
+          employee_id: string
+          expires_at?: string | null
+          id?: string
+          provider?: string | null
+        }
+        Update: {
+          certificate_url?: string | null
+          completed_at?: string | null
+          course_name?: string
+          created_at?: string
+          employee_id?: string
+          expires_at?: string | null
+          id?: string
+          provider?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       v_ceo_dashboard_kpis: {
@@ -836,6 +1359,79 @@ export type Database = {
           team_utilisation_pct: number | null
         }
         Relationships: []
+      }
+      v_leave_requests: {
+        Row: {
+          created_at: string | null
+          days_requested: number | null
+          employee_id: string | null
+          end_date: string | null
+          hr_comment: string | null
+          hr_decision_at: string | null
+          id: string | null
+          leave_type_id: string | null
+          reason: string | null
+          start_date: string | null
+          status: string | null
+          supervisor_comment: string | null
+          supervisor_decision_at: string | null
+          supervisor_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          days_requested?: number | null
+          employee_id?: string | null
+          end_date?: string | null
+          hr_comment?: string | null
+          hr_decision_at?: string | null
+          id?: string | null
+          leave_type_id?: string | null
+          reason?: never
+          start_date?: string | null
+          status?: string | null
+          supervisor_comment?: string | null
+          supervisor_decision_at?: string | null
+          supervisor_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          days_requested?: number | null
+          employee_id?: string | null
+          end_date?: string | null
+          hr_comment?: string | null
+          hr_decision_at?: string | null
+          id?: string | null
+          leave_type_id?: string | null
+          reason?: never
+          start_date?: string | null
+          status?: string | null
+          supervisor_comment?: string | null
+          supervisor_decision_at?: string | null
+          supervisor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_project_margins: {
         Row: {
@@ -866,8 +1462,50 @@ export type Database = {
           },
         ]
       }
+      v_training_expiring_soon: {
+        Row: {
+          certificate_url: string | null
+          completed_at: string | null
+          course_name: string | null
+          created_at: string | null
+          employee_id: string | null
+          expires_at: string | null
+          id: string | null
+          provider: string | null
+        }
+        Insert: {
+          certificate_url?: string | null
+          completed_at?: string | null
+          course_name?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          provider?: string | null
+        }
+        Update: {
+          certificate_url?: string | null
+          completed_at?: string | null
+          course_name?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          provider?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      current_employee_id: { Args: never; Returns: string }
       current_role: { Args: never; Returns: string }
       get_account_balance_as_of: {
         Args: { p_account_id: string; p_as_of_date: string }
@@ -901,6 +1539,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      is_supervisor_of: { Args: { p_employee_id: string }; Returns: boolean }
       refresh_kpi_feed: { Args: never; Returns: undefined }
     }
     Enums: {
@@ -1053,7 +1692,10 @@ export type ActivityStatus = "online" | "offline";
 export type ActivitySource = "csv" | "api";
 export type DeliverySource = "manual" | "github" | "illustrative";
 export type ActionItemStatus = "open" | "done";
-export type UserRole = "admin" | "exec" | "viewer" | "finance_officer" | "finance_manager";
+export type UserRole =
+  | "admin" | "exec" | "viewer"
+  | "finance_officer" | "finance_manager"
+  | "employee" | "supervisor" | "hr_officer" | "hr_manager";
 
 // Finance module (Phase 1)
 export type FinanceAccountType = "bank" | "cash" | "mobile-money";
@@ -1063,3 +1705,13 @@ export type FinanceReportType = "daily" | "weekly" | "monthly";
 export type FinanceReportStatus = "draft" | "published";
 export type FinanceCreditorStatus = "outstanding" | "partially_paid" | "paid";
 export type FinancePaymentNoticeStatus = "scheduled" | "sent" | "paid";
+
+// HR module (Phase 2)
+export type EmployeeStatus = "active" | "on-leave" | "exited";
+export type LeaveRequestStatus = "pending_supervisor" | "pending_hr" | "approved" | "rejected";
+export type JobOpeningStatus = "open" | "closed";
+export type ApplicationStage = "applied" | "shortlisted" | "interview" | "offer" | "hired" | "rejected";
+export type PerformanceReviewStatus = "draft" | "submitted" | "acknowledged";
+export type AttendanceStatus = "present" | "absent" | "late" | "on_leave";
+export type AttendanceSource = "manual" | "lazyboss";
+export type EmployeeTaskStatus = "todo" | "in_progress" | "done";
