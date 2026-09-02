@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
+import { loginAction, type LoginResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,31 +24,20 @@ export default function LoginPage() {
   );
 }
 
+const initialState: LoginResult = {};
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" className="w-full bg-navy hover:bg-navy/90" disabled={pending}>
+      {pending ? "Signing in…" : "Sign in"}
+    </Button>
+  );
+}
+
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-
-    router.push(searchParams.get("next") || "/");
-    router.refresh();
-  }
+  const [state, formAction] = useFormState(loginAction, initialState);
 
   return (
     <Card className="rounded-2xl border-0 shadow-xl">
@@ -59,33 +49,18 @@ function LoginForm() {
         <CardDescription>Sign in to view the executive dashboard</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form action={formAction} className="space-y-4">
+          <input type="hidden" name="next" value={searchParams.get("next") || "/"} />
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <Input id="email" name="email" type="email" autoComplete="email" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <Input id="password" name="password" type="password" autoComplete="current-password" required />
           </div>
-          {error && <p className="text-sm text-status-red">{error}</p>}
-          <Button type="submit" className="w-full bg-navy hover:bg-navy/90" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
-          </Button>
+          {state.error && <p className="text-sm text-status-red">{state.error}</p>}
+          <SubmitButton />
         </form>
       </CardContent>
     </Card>
