@@ -4,13 +4,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { NotificationBell } from "@/components/notification-bell";
 import type { Profile } from "@/lib/supabase/server";
+import type { NotificationRow } from "@/lib/notifications/get";
 
 const SECTION_LABELS: Record<string, string> = {
   "": "ceo-home",
   company: "company-overview",
   projects: "project-portfolio",
   people: "people-and-delivery",
+  hr: "hr",
   finance: "finance",
   risks: "risks-issues-decisions",
   clients: "clients",
@@ -19,7 +22,7 @@ const SECTION_LABELS: Record<string, string> = {
   admin: "admin",
 };
 
-export function TopHeader({ profile }: { profile: Profile }) {
+export function TopHeader({ profile, notifications }: { profile: Profile; notifications: NotificationRow[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const segment = pathname.split("/").filter(Boolean)[0] ?? "";
@@ -38,6 +41,7 @@ export function TopHeader({ profile }: { profile: Profile }) {
         command.dokuma.internal/<span className="text-navy">{section}</span>
       </span>
       <div className="flex items-center gap-3">
+        <NotificationBell initialNotifications={notifications} />
         <span className="text-sm text-muted-foreground">{profile.full_name ?? "Signed in"}</span>
         <Badge className="rounded-full bg-gold/15 text-gold hover:bg-gold/15">{profile.role}</Badge>
         <Button variant="ghost" size="sm" onClick={handleSignOut}>

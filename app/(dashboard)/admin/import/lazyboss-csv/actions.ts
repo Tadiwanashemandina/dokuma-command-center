@@ -14,7 +14,7 @@ export type ImportResult = {
 };
 
 export async function importLazyBossCsv(_prevState: ImportResult | null, formData: FormData): Promise<ImportResult> {
-  await requireRole(["admin"]);
+  const profile = await requireRole(["admin"]);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -68,6 +68,14 @@ export async function importLazyBossCsv(_prevState: ImportResult | null, formDat
   }
 
   await supabase.rpc("refresh_kpi_feed");
+
+  await supabase.from("audit_log").insert({
+    actor_id: profile.id,
+    action: "lazyboss_import",
+    entity_type: "activity_records",
+    entity_id: null,
+    metadata: { filename: file.name, row_count: rows.length, skipped: parsed.data.length - rows.length },
+  });
 
   return { inserted: rows.length, skipped: parsed.data.length - rows.length, errors };
 }

@@ -1,5 +1,7 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import type { LeaveRequestStatus } from "@/types/database.types";
+import { createApprovalStep, decideApprovalStep } from "@/lib/approvals/approvals";
+import { notify } from "@/lib/notifications/send";
 
 /**
  * `supabase gen types` marks every column of v_leave_requests as nullable
@@ -42,6 +44,18 @@ export async function getVisibleLeaveRequests(filter: LeaveRequestFilter = {}): 
   return (data ?? []) as unknown as LeaveRequestRow[];
 }
 
+async function getUserIdForEmployee(employeeId: string): Promise<string | null> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase.from("employees").select("user_id").eq("id", employeeId).single();
+  return data?.user_id ?? null;
+}
+
+async function getHrTierUserIds(): Promise<string[]> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase.from("profiles").select("id").in("role", ["hr_officer", "hr_manager"]);
+  return (data ?? []).map((p) => p.id);
+}
+
 export type SubmitLeaveRequestInput = {
   employeeId: string;
   leaveTypeId: string;
@@ -61,7 +75,7 @@ export async function submitLeaveRequest(input: SubmitLeaveRequestInput, actorId
 
   const { data: employee, error: employeeError } = await supabase
     .from("employees")
-    .select("supervisor_id")
+    .select("supervisor_id, full_name")
     .eq("id", input.employeeId)
     .single();
   if (employeeError) throw new Error(`Employee not found: ${employeeError.message}`);
@@ -90,6 +104,20 @@ export async function submitLeaveRequest(input: SubmitLeaveRequestInput, actorId
     metadata: { employee_id: input.employeeId, days_requested: input.daysRequested },
   });
 
+  await createApprovalStep("leave_request", request.id, "supervisor");
+
+  if (employee.supervisor_id) {
+    const supervisorUserId = await getUserIdForEmployee(employee.supervisor_id);
+    if (supervisorUserId) {
+      await notify(supervisorUserId, {
+        type: "leave_request_pending_supervisor",
+        title: `${employee.full_name} requested ${input.daysRequested} day(s) of leave`,
+        body: `${input.startDate} to ${input.endDate}. Review it in the Leave module.`,
+        link: "/hr/leave",
+      });
+    }
+  }
+
   return request;
 }
 
@@ -106,14 +134,16 @@ export async function supervisorDecision(
   const supabase = createServiceRoleClient();
   const nextStatus = decision === "approve" ? "pending_hr" : "rejected";
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("leave_requests")
     .update({
       status: nextStatus,
       supervisor_decision_at: new Date().toISOString(),
       supervisor_comment: comment,
     })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .select("employee_id, days_requested")
+    .single();
   if (error) throw new Error(`supervisorDecision failed: ${error.message}`);
 
   await supabase.from("audit_log").insert({
@@ -123,20 +153,59 @@ export async function supervisorDecision(
     entity_id: requestId,
     metadata: { comment },
   });
+
+  await decideApprovalStep(
+    "leave_request",
+    requestId,
+    "supervisor",
+    decision === "approve" ? "approved" : "rejected",
+    actorId,
+    comment
+  );
+
+  const employeeUserId = await getUserIdForEmployee(updated.employee_id);
+  if (decision === "approve") {
+    await createApprovalStep("leave_request", requestId, "hr");
+    for (const hrUserId of await getHrTierUserIds()) {
+      await notify(hrUserId, {
+        type: "leave_request_pending_hr",
+        title: `A leave request needs HR review`,
+        body: `${updated.days_requested} day(s), supervisor-approved. Review it in the Leave module.`,
+        link: "/hr/leave",
+      });
+    }
+    if (employeeUserId) {
+      await notify(employeeUserId, {
+        type: "leave_request_supervisor_approved",
+        title: "Your leave request was approved by your supervisor",
+        body: "It's now with HR for final approval.",
+        link: "/hr/leave",
+      });
+    }
+  } else if (employeeUserId) {
+    await notify(employeeUserId, {
+      type: "leave_request_rejected",
+      title: "Your leave request was declined",
+      body: comment ? `Your supervisor's note: ${comment}` : undefined,
+      link: "/hr/leave",
+    });
+  }
 }
 
 export async function hrDecision(requestId: string, decision: "approve" | "reject", comment: string | null, actorId: string) {
   const supabase = createServiceRoleClient();
   const nextStatus = decision === "approve" ? "approved" : "rejected";
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("leave_requests")
     .update({
       status: nextStatus,
       hr_decision_at: new Date().toISOString(),
       hr_comment: comment,
     })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .select("employee_id")
+    .single();
   if (error) throw new Error(`hrDecision failed: ${error.message}`);
   // leave_balances.days_used is incremented automatically by the
   // recompute_leave_balance trigger when status becomes 'approved'.
@@ -148,4 +217,16 @@ export async function hrDecision(requestId: string, decision: "approve" | "rejec
     entity_id: requestId,
     metadata: { comment },
   });
+
+  await decideApprovalStep("leave_request", requestId, "hr", decision === "approve" ? "approved" : "rejected", actorId, comment);
+
+  const employeeUserId = await getUserIdForEmployee(updated.employee_id);
+  if (employeeUserId) {
+    await notify(employeeUserId, {
+      type: `leave_request_${decision === "approve" ? "approved" : "rejected"}`,
+      title: decision === "approve" ? "Your leave request was approved" : "Your leave request was declined by HR",
+      body: comment ? `HR's note: ${comment}` : undefined,
+      link: "/hr/leave",
+    });
+  }
 }

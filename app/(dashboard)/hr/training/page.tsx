@@ -5,11 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { TrainingForm } from "./training-form";
+import { checkTrainingExpiringSoon } from "@/lib/notifications/triggers";
 
 export default async function TrainingPage() {
   const profile = await requireRole(["admin", "exec", "employee", "supervisor", "hr_officer", "hr_manager"]);
   const isHrTier = ["admin", "exec", "hr_officer", "hr_manager"].includes(profile.role);
   const canManage = ["admin", "hr_officer", "hr_manager"].includes(profile.role);
+
+  if (isHrTier) await checkTrainingExpiringSoon();
 
   const supabase = await createClient();
   // RLS scopes rows: own / direct-reports' / all (HR-tier).

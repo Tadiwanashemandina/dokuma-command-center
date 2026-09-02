@@ -37,3 +37,8 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# CLI-generated marketplace skill caches (Resend/Upstash integration installs)
+skills-lock.json
+.agents/skills
+.claude/skills

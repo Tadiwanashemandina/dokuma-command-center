@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -158,6 +158,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      approvals: {
+        Row: {
+          approvable_id: string
+          approvable_type: string
+          comment: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          status: string
+          step: string
+        }
+        Insert: {
+          approvable_id: string
+          approvable_type: string
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          status?: string
+          step: string
+        }
+        Update: {
+          approvable_id?: string
+          approvable_type?: string
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          status?: string
+          step?: string
+        }
+        Relationships: []
       }
       attendance_records: {
         Row: {
@@ -607,6 +643,7 @@ export type Database = {
           id: string
           is_dlap: boolean
           is_reversed: boolean
+          receipt_path: string | null
           reference_no: string | null
           reverses_transaction_id: string | null
           source: string
@@ -626,6 +663,7 @@ export type Database = {
           id?: string
           is_dlap?: boolean
           is_reversed?: boolean
+          receipt_path?: string | null
           reference_no?: string | null
           reverses_transaction_id?: string | null
           source?: string
@@ -645,6 +683,7 @@ export type Database = {
           id?: string
           is_dlap?: boolean
           is_reversed?: boolean
+          receipt_path?: string | null
           reference_no?: string | null
           reverses_transaction_id?: string | null
           source?: string
@@ -711,6 +750,7 @@ export type Database = {
       }
       job_descriptions: {
         Row: {
+          attachment_path: string | null
           created_at: string
           effective_date: string
           employee_id: string | null
@@ -722,6 +762,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          attachment_path?: string | null
           created_at?: string
           effective_date?: string
           employee_id?: string | null
@@ -733,6 +774,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          attachment_path?: string | null
           created_at?: string
           effective_date?: string
           employee_id?: string | null
@@ -1039,6 +1081,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       performance_reviews: {
         Row: {
@@ -1526,6 +1601,7 @@ export type Database = {
           id: string
           is_dlap: boolean
           is_reversed: boolean
+          receipt_path: string | null
           reference_no: string | null
           reverses_transaction_id: string | null
           source: string
@@ -1715,3 +1791,6 @@ export type PerformanceReviewStatus = "draft" | "submitted" | "acknowledged";
 export type AttendanceStatus = "present" | "absent" | "late" | "on_leave";
 export type AttendanceSource = "manual" | "lazyboss";
 export type EmployeeTaskStatus = "todo" | "in_progress" | "done";
+
+// Shared infrastructure (Phase 3)
+export type ApprovalStatus = "pending" | "approved" | "rejected";

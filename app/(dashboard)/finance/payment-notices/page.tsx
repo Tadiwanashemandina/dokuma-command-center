@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate, formatUsd } from "@/lib/utils";
 import { PaymentNoticeForm } from "./notice-form";
 import { PaymentNoticeStatusSelect } from "./status-select";
+import { checkPaymentNoticesDueSoon } from "@/lib/notifications/triggers";
 
 function currentMonthRange(): { start: string; end: string } {
   const now = new Date();
@@ -18,6 +19,8 @@ export default async function PaymentNoticesPage() {
   const profile = await requireRole(["admin", "exec", "finance_officer", "finance_manager"]);
   const canCreate = ["admin", "finance_officer", "finance_manager"].includes(profile.role);
   const canEditStatus = ["admin", "finance_manager"].includes(profile.role);
+
+  await checkPaymentNoticesDueSoon();
 
   const { start, end } = currentMonthRange();
   const supabase = await createClient();

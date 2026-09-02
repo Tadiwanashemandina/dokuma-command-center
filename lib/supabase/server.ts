@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { redirect } from "next/navigation";
 import type { Database, UserRole } from "@/types/database.types";
+import { hardenCookieOptions } from "./cookie-options";
 
 // Cookie-session client — respects RLS, used by every server component/page.
 export async function createClient() {
@@ -19,7 +20,7 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, hardenCookieOptions(options))
             );
           } catch {
             // Called from a Server Component during a static render — the
@@ -32,8 +33,11 @@ export async function createClient() {
 }
 
 // Service-role client — bypasses RLS. Server-only, never imported by client
-// components. Used solely by the LazyBoss CSV import path after an
-// app-level requireRole('admin') check.
+// components. Used by every write path in the app (LazyBoss import,
+// Finance, HR) after an app-level requireRole() check — confirmed via a
+// repo-wide grep before this security pass that no "use client" file
+// references this function or SUPABASE_SERVICE_ROLE_KEY, directly or
+// transitively.
 export function createServiceRoleClient() {
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -5,6 +5,16 @@ import { redirect } from "next/navigation";
 import { requireRole, createServiceRoleClient } from "@/lib/supabase/server";
 import { computeDailySnapshot, computeWeeklyReportData, computeMonthlyReportData } from "@/lib/finance/reports";
 import { weeklyReportFreeTextSchema, monthlyReportFreeTextSchema } from "@/lib/validation/finance-schema";
+import { createApprovalStep, decideApprovalStep } from "@/lib/approvals/approvals";
+import { notify } from "@/lib/notifications/send";
+
+const FINANCE_SIGNOFF_STEP = "finance_manager_signoff";
+
+async function getFinanceManagerUserIds(): Promise<string[]> {
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase.from("profiles").select("id").in("role", ["finance_manager"]);
+  return (data ?? []).map((p) => p.id);
+}
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -86,6 +96,22 @@ async function createPeriodReport(
     metadata: { period_start: periodStart, period_end: periodEnd },
   });
 
+  // A draft genuinely awaits sign-off — this is the approvals engine's
+  // second real consumer, proving it's generic and not leave-specific.
+  // An immediately-published report (Manager choosing "Save & Publish"
+  // themselves) never had a pending state, so no step is created for it.
+  if (status === "draft") {
+    await createApprovalStep("finance_report", report.id, FINANCE_SIGNOFF_STEP);
+    for (const managerUserId of await getFinanceManagerUserIds()) {
+      await notify(managerUserId, {
+        type: "finance_report_pending_signoff",
+        title: `A ${type} finance report needs your sign-off`,
+        body: `${periodStart} to ${periodEnd}.`,
+        link: `/finance/reports/${report.id}`,
+      });
+    }
+  }
+
   return report.id as string;
 }
 
@@ -143,10 +169,12 @@ export async function publishReportAction(formData: FormData) {
   const reportId = formData.get("report_id") as string;
 
   const supabase = createServiceRoleClient();
-  const { error } = await supabase
+  const { data: report, error } = await supabase
     .from("finance_reports")
     .update({ status: "published", published_by: profile.id, published_at: new Date().toISOString() })
-    .eq("id", reportId);
+    .eq("id", reportId)
+    .select("type, generated_by")
+    .single();
   if (error) throw new Error(`Failed to publish report: ${error.message}`);
 
   await supabase.from("audit_log").insert({
@@ -156,6 +184,16 @@ export async function publishReportAction(formData: FormData) {
     entity_id: reportId,
     metadata: {},
   });
+
+  await decideApprovalStep("finance_report", reportId, FINANCE_SIGNOFF_STEP, "approved", profile.id, null);
+
+  if (report.generated_by && report.generated_by !== profile.id) {
+    await notify(report.generated_by, {
+      type: "finance_report_published",
+      title: `Your ${report.type} report was published`,
+      link: `/finance/reports/${reportId}`,
+    });
+  }
 
   revalidatePath(`/finance/reports/${reportId}`);
   revalidatePath("/finance/reports");
