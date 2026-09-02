@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate, formatUsd } from "@/lib/utils";
 import { TransactionForm } from "./transaction-form";
 import { ReverseButton } from "./reverse-button";
+import { ReceiptButton } from "./receipt-button";
 
 export default async function TransactionsPage() {
   const profile = await requireRole(["admin", "exec", "finance_officer", "finance_manager"]);
@@ -47,6 +48,7 @@ export default async function TransactionsPage() {
                 <TableHead>Counterparty</TableHead>
                 <TableHead>DLAP</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Receipt</TableHead>
                 {canWrite && <TableHead />}
               </TableRow>
             </TableHeader>
@@ -80,6 +82,9 @@ export default async function TransactionsPage() {
                     ) : (
                       <Badge variant="outline">Posted</Badge>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <ReceiptButton transactionId={t.id} receiptPath={t.receipt_path} canUpload={canWrite} />
                   </TableCell>
                   {canWrite && (
                     <TableCell>

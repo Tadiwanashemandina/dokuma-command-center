@@ -8,10 +8,12 @@ import { HrSubNav } from "@/components/hr/hr-subnav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
+import { JdAttachmentButton } from "./jd-attachment-button";
 
 export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const profile = await requireRole(["admin", "exec", "employee", "supervisor", "hr_officer", "hr_manager"]);
   const isHrTier = ["admin", "exec", "hr_officer", "hr_manager"].includes(profile.role);
+  const canManageJd = ["admin", "hr_officer", "hr_manager"].includes(profile.role);
 
   const { id } = await params;
   const supabase = await createClient();
@@ -74,6 +76,12 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
               {jdHistory.length > 1 && (
                 <p className="text-xs text-muted-foreground">{jdHistory.length} versions on file.</p>
               )}
+              <JdAttachmentButton
+                employeeId={employee.id}
+                jobDescriptionId={currentJd.id}
+                attachmentPath={currentJd.attachment_path}
+                canUpload={canManageJd}
+              />
             </>
           ) : (
             <p className="text-muted-foreground">No job description on file.</p>
