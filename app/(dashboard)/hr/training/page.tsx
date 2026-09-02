@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate } from "@/lib/utils";
 import { TrainingForm } from "./training-form";
 import { checkTrainingExpiringSoon } from "@/lib/notifications/triggers";
+import { CsvExportButton } from "@/components/csv-export-button";
 
 export default async function TrainingPage() {
   const profile = await requireRole(["admin", "exec", "employee", "supervisor", "hr_officer", "hr_manager"]);
@@ -25,6 +26,14 @@ export default async function TrainingPage() {
     employeeIds.length > 0 ? await supabase.from("employees").select("id, full_name").in("id", employeeIds) : { data: [] };
   const nameById = new Map((recordEmployees ?? []).map((e) => [e.id, e.full_name]));
 
+  const csvRows = (records ?? []).map((r) => [
+    nameById.get(r.employee_id) ?? "",
+    r.course_name,
+    r.provider,
+    formatDate(r.completed_at),
+    formatDate(r.expires_at),
+  ]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -32,7 +41,14 @@ export default async function TrainingPage() {
           <h1 className="font-serif text-3xl font-semibold text-navy">HR</h1>
           <p className="mt-1 text-sm text-muted-foreground">Training and certification records.</p>
         </div>
-        {canManage && <TrainingForm employees={employees ?? []} />}
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="training-records.csv"
+            headers={["Employee", "Course", "Provider", "Completed", "Expires"]}
+            rows={csvRows}
+          />
+          {canManage && <TrainingForm employees={employees ?? []} />}
+        </div>
       </div>
 
       <HrSubNav isHrTier={isHrTier} />

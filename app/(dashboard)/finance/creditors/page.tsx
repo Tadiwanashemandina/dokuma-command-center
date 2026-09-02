@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate, formatUsd } from "@/lib/utils";
 import { CreditorForm } from "./creditor-form";
 import { CreditorStatusSelect } from "./status-select";
+import { CsvExportButton } from "@/components/csv-export-button";
 
 export default async function CreditorsPage() {
   const profile = await requireRole(["admin", "exec", "finance_officer", "finance_manager"]);
@@ -17,6 +18,14 @@ export default async function CreditorsPage() {
     .select("*")
     .order("due_date", { ascending: true, nullsFirst: false });
 
+  const csvRows = (creditors ?? []).map((c) => [
+    c.name,
+    c.amount_owed,
+    formatDate(c.due_date),
+    c.status.replace("_", " "),
+    c.notes,
+  ]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -24,7 +33,14 @@ export default async function CreditorsPage() {
           <h1 className="font-serif text-3xl font-semibold text-navy">Finance</h1>
           <p className="mt-1 text-sm text-muted-foreground">Amounts owed to third parties.</p>
         </div>
-        {canCreate && <CreditorForm />}
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="creditors.csv"
+            headers={["Name", "Amount Owed", "Due Date", "Status", "Notes"]}
+            rows={csvRows}
+          />
+          {canCreate && <CreditorForm />}
+        </div>
       </div>
 
       <FinanceSubNav canWrite={canCreate} />

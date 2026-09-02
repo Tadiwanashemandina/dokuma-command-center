@@ -7,6 +7,7 @@ import { formatDate, formatUsd } from "@/lib/utils";
 import { TransactionForm } from "./transaction-form";
 import { ReverseButton } from "./reverse-button";
 import { ReceiptButton } from "./receipt-button";
+import { CsvExportButton } from "@/components/csv-export-button";
 
 export default async function TransactionsPage() {
   const profile = await requireRole(["admin", "exec", "finance_officer", "finance_manager"]);
@@ -23,6 +24,17 @@ export default async function TransactionsPage() {
     supabase.from("finance_accounts").select("id, name").eq("is_active", true).order("name"),
   ]);
 
+  const csvRows = (transactions ?? []).map((t) => [
+    formatDate(t.date),
+    (t.finance_accounts as unknown as { name: string } | null)?.name ?? "",
+    t.type,
+    t.amount,
+    t.category,
+    t.counterparty,
+    t.is_dlap ? `${t.dlap_share_pct ?? 0}%` : "",
+    t.is_reversed ? "Reversed" : t.reverses_transaction_id ? "Reversal" : "Posted",
+  ]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -30,7 +42,14 @@ export default async function TransactionsPage() {
           <h1 className="font-serif text-3xl font-semibold text-navy">Finance</h1>
           <p className="mt-1 text-sm text-muted-foreground">Every recorded transaction across all accounts.</p>
         </div>
-        {canWrite && <TransactionForm accounts={accounts ?? []} />}
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="transactions.csv"
+            headers={["Date", "Account", "Type", "Amount", "Category", "Counterparty", "DLAP", "Status"]}
+            rows={csvRows}
+          />
+          {canWrite && <TransactionForm accounts={accounts ?? []} />}
+        </div>
       </div>
 
       <FinanceSubNav canWrite={canWrite} />

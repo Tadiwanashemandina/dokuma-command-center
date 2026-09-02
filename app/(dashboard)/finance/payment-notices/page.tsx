@@ -7,6 +7,7 @@ import { formatDate, formatUsd } from "@/lib/utils";
 import { PaymentNoticeForm } from "./notice-form";
 import { PaymentNoticeStatusSelect } from "./status-select";
 import { checkPaymentNoticesDueSoon } from "@/lib/notifications/triggers";
+import { CsvExportButton } from "@/components/csv-export-button";
 
 function currentMonthRange(): { start: string; end: string } {
   const now = new Date();
@@ -31,6 +32,8 @@ export default async function PaymentNoticesPage() {
     .lte("due_date", end)
     .order("due_date", { ascending: true });
 
+  const csvRows = (notices ?? []).map((n) => [n.period, n.payee, n.amount, formatDate(n.due_date), n.status]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -38,7 +41,14 @@ export default async function PaymentNoticesPage() {
           <h1 className="font-serif text-3xl font-semibold text-navy">Finance</h1>
           <p className="mt-1 text-sm text-muted-foreground">Payment notices due this month ({start} to {end}).</p>
         </div>
-        {canCreate && <PaymentNoticeForm />}
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="payment-notices.csv"
+            headers={["Period", "Payee", "Amount", "Due Date", "Status"]}
+            rows={csvRows}
+          />
+          {canCreate && <PaymentNoticeForm />}
+        </div>
       </div>
 
       <FinanceSubNav canWrite={canCreate} />

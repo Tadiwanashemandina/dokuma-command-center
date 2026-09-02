@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
+import { CsvExportButton } from "@/components/csv-export-button";
 
 export default async function EmployeeDirectoryPage() {
   const profile = await requireRole(["admin", "exec", "employee", "supervisor", "hr_officer", "hr_manager"]);
@@ -18,13 +19,28 @@ export default async function EmployeeDirectoryPage() {
     .select("id, full_name, role_title, department, status, employment_date")
     .order("full_name");
 
+  const csvRows = (employees ?? []).map((e) => [
+    e.full_name,
+    e.role_title,
+    e.department,
+    e.status.replace("-", " "),
+    formatDate(e.employment_date),
+  ]);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold text-navy">HR</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {isHrTier ? "Every employee at Dokuma." : "Your profile and direct reports."}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-serif text-3xl font-semibold text-navy">HR</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isHrTier ? "Every employee at Dokuma." : "Your profile and direct reports."}
+          </p>
+        </div>
+        <CsvExportButton
+          filename="employees.csv"
+          headers={["Name", "Role", "Department", "Status", "Employed Since"]}
+          rows={csvRows}
+        />
       </div>
 
       <HrSubNav isHrTier={isHrTier} />

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate } from "@/lib/utils";
 import { DecisionButtons } from "./decision-buttons";
 import { supervisorDecisionAction, hrDecisionAction } from "./actions";
+import { CsvExportButton } from "@/components/csv-export-button";
 
 export default async function LeavePage() {
   const profile = await requireRole(["admin", "exec", "employee", "supervisor", "hr_officer", "hr_manager"]);
@@ -28,6 +29,15 @@ export default async function LeavePage() {
   const { data: leaveTypes } = await supabase.from("leave_types").select("id, name");
   const typeById = new Map((leaveTypes ?? []).map((t) => [t.id, t.name]));
 
+  const csvRows = requests.map((r) => [
+    nameById.get(r.employee_id) ?? "",
+    typeById.get(r.leave_type_id) ?? "",
+    formatDate(r.start_date),
+    formatDate(r.end_date),
+    r.days_requested,
+    r.status.replace(/_/g, " "),
+  ]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -37,11 +47,18 @@ export default async function LeavePage() {
             {isHrTier ? "All leave requests." : "Your leave requests and any awaiting your decision."}
           </p>
         </div>
-        {employee && (
-          <Button asChild className="bg-navy hover:bg-navy/90">
-            <Link href="/hr/leave/new">New Leave Request</Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="leave-requests.csv"
+            headers={["Employee", "Type", "Start", "End", "Days", "Status"]}
+            rows={csvRows}
+          />
+          {employee && (
+            <Button asChild className="bg-navy hover:bg-navy/90">
+              <Link href="/hr/leave/new">New Leave Request</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <HrSubNav isHrTier={isHrTier} />

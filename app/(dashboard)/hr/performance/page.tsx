@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ReviewForm } from "./review-form";
+import { CsvExportButton } from "@/components/csv-export-button";
 
 export default async function PerformancePage() {
   const profile = await requireRole(["admin", "exec", "employee", "supervisor", "hr_officer", "hr_manager"]);
@@ -20,6 +21,8 @@ export default async function PerformancePage() {
     employeeIds.length > 0 ? await supabase.from("employees").select("id, full_name").in("id", employeeIds) : { data: [] };
   const nameById = new Map((reviewEmployees ?? []).map((e) => [e.id, e.full_name]));
 
+  const csvRows = (reviews ?? []).map((r) => [nameById.get(r.employee_id) ?? "", r.period, r.rating, r.status]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -27,7 +30,14 @@ export default async function PerformancePage() {
           <h1 className="font-serif text-3xl font-semibold text-navy">HR</h1>
           <p className="mt-1 text-sm text-muted-foreground">Performance review cycles.</p>
         </div>
-        {canReview && <ReviewForm employees={employees ?? []} />}
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="performance-reviews.csv"
+            headers={["Employee", "Period", "Rating", "Status"]}
+            rows={csvRows}
+          />
+          {canReview && <ReviewForm employees={employees ?? []} />}
+        </div>
       </div>
 
       <HrSubNav isHrTier={isHrTier} />
