@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { redirect } from "next/navigation";
 import type { Database, UserRole } from "@/types/database.types";
 import { hardenCookieOptions } from "./cookie-options";
+import { MFA_REQUIRED_ROLES, getAssuranceLevel, hasVerifiedTotpFactor } from "./mfa";
 
 // Cookie-session client — respects RLS, used by every server component/page.
 export async function createClient() {
@@ -71,5 +72,16 @@ export async function requireRole(allowed: UserRole[]): Promise<Profile> {
   const profile = await getProfile();
   if (!profile) redirect("/login");
   if (!allowed.includes(profile.role)) redirect("/");
+
+  // Finance/HR sessions must reach AAL2 (MFA-verified) before proceeding —
+  // admin/exec are intentionally excluded from this gate.
+  if (MFA_REQUIRED_ROLES.includes(profile.role)) {
+    const supabase = await createClient();
+    if ((await getAssuranceLevel(supabase)) !== "aal2") {
+      const verified = await hasVerifiedTotpFactor(supabase);
+      redirect(verified ? "/account/mfa/verify" : "/account/mfa/enroll");
+    }
+  }
+
   return profile;
 }
