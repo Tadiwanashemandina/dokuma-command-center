@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, requireRole } from "@/lib/supabase/server";
 import { KpiCard } from "@/components/kpi-card";
 import { GarBar } from "@/components/gar-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatUsdCompact } from "@/lib/utils";
 
 export default async function CompanyOverviewPage() {
+  await requireRole(["admin", "exec"]);
   const supabase = await createClient();
 
   const [{ data: kpis }, { data: milestones }, { data: openItems }] = await Promise.all([

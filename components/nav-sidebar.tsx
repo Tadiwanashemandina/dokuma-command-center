@@ -27,8 +27,8 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "CEO Home", icon: LayoutDashboard },
-  { href: "/company", label: "Company Overview", icon: Building2 },
+  { href: "/", label: "CEO Home", icon: LayoutDashboard, roles: ["admin", "exec"] },
+  { href: "/company", label: "Company Overview", icon: Building2, roles: ["admin", "exec"] },
   { href: "/projects", label: "Project Portfolio", icon: FolderKanban },
   { href: "/people", label: "People & Delivery", icon: Users, roles: ["admin", "exec"] },
   { href: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "exec", "finance_officer", "finance_manager"] },

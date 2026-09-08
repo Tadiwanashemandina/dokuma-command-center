@@ -1,11 +1,28 @@
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createClient, requireRole } from "@/lib/supabase/server";
 import { KpiCard } from "@/components/kpi-card";
 import { GarBar } from "@/components/gar-bar";
 import { DailyBriefPanel } from "@/components/daily-brief-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatUsdCompact } from "@/lib/utils";
+import { roleHomePath } from "@/lib/role-home";
 
 export default async function CeoHomePage() {
+  const profile = await requireRole([
+    "admin",
+    "exec",
+    "finance_officer",
+    "finance_manager",
+    "employee",
+    "supervisor",
+    "hr_officer",
+    "hr_manager",
+    "viewer",
+  ]);
+  if (profile.role !== "admin" && profile.role !== "exec") {
+    redirect(roleHomePath(profile.role));
+  }
+
   const supabase = await createClient();
 
   const [{ data: kpis }, { data: brief }] = await Promise.all([

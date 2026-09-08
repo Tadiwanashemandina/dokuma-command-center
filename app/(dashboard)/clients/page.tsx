@@ -1,8 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getProfile } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/status-badge";
 import type { ProjectStatus } from "@/types/database.types";
+import { departmentScopeForRole } from "@/lib/department-scope";
 
 const TIER_STYLES: Record<string, string> = {
   strategic: "bg-gold/15 text-gold hover:bg-gold/15",
@@ -11,8 +13,14 @@ const TIER_STYLES: Record<string, string> = {
 };
 
 export default async function ClientsPage() {
+  const profile = await getProfile();
+  if (!profile) redirect("/login");
+  const scope = departmentScopeForRole(profile.role);
+
   const supabase = await createClient();
-  const { data: clients } = await supabase.from("clients").select("*").order("tier").order("name");
+  let query = supabase.from("clients").select("*").order("tier").order("name");
+  if (scope) query = query.eq("department", scope);
+  const { data: clients } = await query;
   const { data: projects } = await supabase.from("projects").select("id, name, status, client_id");
 
   return (
@@ -20,9 +28,19 @@ export default async function ClientsPage() {
       <div>
         <h1 className="font-serif text-3xl font-semibold text-navy">Client &amp; Stakeholder Management</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Projects, commitments and next deliverables by client.
+          {scope
+            ? `Clients relevant to ${scope === "finance" ? "Finance" : "HR"}.`
+            : "Projects, commitments and next deliverables by client."}
         </p>
       </div>
+
+      {(!clients || clients.length === 0) && (
+        <Card className="rounded-2xl">
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No {scope === "finance" ? "Finance" : "HR"}-relevant clients on record.
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {clients?.map((client) => {
