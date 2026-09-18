@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/dokuma-mark.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Replaces the `metadata` export from app/layout.tsx (inventory §2.7).
+      This is an internal, authenticated tool with no public or crawlable
+      pages, so the static title and description that Next emitted are the
+      whole requirement — there is nothing to gain from a runtime <head>
+      manager. Per-route titles are set by `useDocumentTitle`.
+    -->
+    <title>Dokuma Command Centre</title>
+    <meta
+      name="description"
+      content="Dokuma AI Executive Command Centre — a live view of projects, finance, people and risk across the company."
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="light" />
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

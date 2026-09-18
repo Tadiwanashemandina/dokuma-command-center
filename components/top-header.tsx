@@ -1,8 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "@/components/notification-bell";
 import type { Profile } from "@/lib/supabase/server";
@@ -24,29 +22,23 @@ const SECTION_LABELS: Record<string, string> = {
 
 export function TopHeader({ profile, notifications }: { profile: Profile; notifications: NotificationRow[] }) {
   const pathname = usePathname();
-  const router = useRouter();
   const segment = pathname.split("/").filter(Boolean)[0] ?? "";
   const section = SECTION_LABELS[segment] ?? segment;
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-white px-6">
-      <span className="font-mono text-sm text-muted-foreground">
-        command.dokuma.internal/<span className="text-navy">{section}</span>
+    <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between border-b border-border/70 bg-white/95 px-6 backdrop-blur sm:px-8">
+      <span className="font-mono text-[11px] tracking-wide text-muted-foreground/70">
+        command.dokuma.internal/<span className="font-medium text-navy">{section}</span>
       </span>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 sm:gap-4">
         <NotificationBell initialNotifications={notifications} />
-        <span className="text-sm text-muted-foreground">{profile.full_name ?? "Signed in"}</span>
-        <Badge className="rounded-full bg-gold/15 text-gold hover:bg-gold/15">{profile.role}</Badge>
-        <Button variant="ghost" size="sm" onClick={handleSignOut}>
-          Sign out
-        </Button>
+        <div className="hidden h-6 w-px bg-border sm:block" />
+        <div className="hidden items-center gap-2.5 sm:flex">
+          <span className="text-sm font-medium text-navy">{profile.full_name ?? "Signed in"}</span>
+          <Badge className="rounded-full bg-gold/15 text-[11px] font-medium text-gold hover:bg-gold/15">
+            {profile.role}
+          </Badge>
+        </div>
       </div>
     </header>
   );

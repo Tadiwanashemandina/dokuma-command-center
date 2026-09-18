@@ -1,0 +1,4 @@
+{
+  "//": "Marks this directory as ESM so Vercel's bundler emits `import` rather than `require`. The server workspace is `\"type\": \"module\"`, but the repo root is not, and api/index.ts inherits from the root — so without this the compiled function does require('server/src/app.js') against an ES module and dies with ERR_REQUIRE_ESM on every request.",
+  "type": "module"
+}

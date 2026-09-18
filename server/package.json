@@ -1,0 +1,44 @@
+{
+  "name": "@dokuma/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts",
+    "db:indexes": "tsx src/scripts/ensure-indexes.ts",
+    "db:seed": "tsx src/scripts/seed.ts",
+    "db:verify": "tsx src/scripts/verify-data-model.ts",
+    "seed:users": "tsx src/scripts/seed-users.ts",
+    "test:auth": "tsx src/scripts/auth-tests.ts",
+    "verify:auth": "tsx src/scripts/verify-auth-offline.ts",
+    "test:api": "tsx src/scripts/api-tests.ts",
+    "invite": "tsx src/scripts/invite-user.ts"
+  },
+  "dependencies": {
+    "@dokuma/shared": "*",
+    "argon2": "^0.41.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "mongoose": "^8.9.2",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.6",
+    "@types/qrcode": "^1.5.5",
+    "mongodb-memory-server": "^10.4.3",
+    "tsx": "^4.23.13",
+    "typescript": "^5.6.3"
+  }
+}

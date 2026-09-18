@@ -1,0 +1,27 @@
+# The legacy Next.js tree. Still present in the repo (removing it is Prompt 8
+# of the migration), but nothing in it may reach a Vercel build.
+#
+# `middleware.ts` is the one that actually breaks things: Vercel detects a root
+# middleware file regardless of `framework: null`, deploys it as an Edge
+# Function, and runs it on every path its matcher covers — which is all of
+# them. It imports the Supabase session helper, which no longer exists, so
+# every request returned MIDDLEWARE_INVOCATION_FAILED (500).
+#
+# NOTE the leading slashes. A bare `components/` matches that directory name at
+# ANY depth, which silently excluded `client/src/components/` too and broke
+# every `@/` import in the client build. These must stay root-anchored.
+/middleware.ts
+/next.config.mjs
+/next-env.d.ts
+/app/
+/components/
+/lib/
+/hooks/
+/types/
+/supabase/
+/scripts/
+/public/
+
+# Local-only; never deployed.
+/.env.local
+/server/.env

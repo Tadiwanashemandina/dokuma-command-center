@@ -42,3 +42,9 @@ next-env.d.ts
 skills-lock.json
 .agents/skills
 .claude/skills
+
+# MERN migration packages
+/client/dist/
+/server/dist/
+/shared/dist/
+*.tsbuildinfo

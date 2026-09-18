@@ -1,11 +1,12 @@
 "use server";
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { loginRateLimit } from "@/lib/rate-limit";
+import { hardenCookieOptions } from "@/lib/supabase/cookie-options";
 
-export type LoginResult = { error?: string };
+export type LoginResult = { error?: string; success?: boolean; next?: string };
 
 export async function loginAction(_prev: LoginResult | null, formData: FormData): Promise<LoginResult> {
   const email = String(formData.get("email") ?? "");
@@ -19,10 +20,18 @@ export async function loginAction(_prev: LoginResult | null, formData: FormData)
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     return { error: error.message };
   }
 
-  redirect(next);
+  if (process.env.MONGODB_ONLY === "true" && data.session?.access_token) {
+    (await cookies()).set(
+      "dokuma_local_session",
+      data.session.access_token,
+      hardenCookieOptions({ httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 7 })
+    );
+  }
+
+  return { success: true, next };
 }

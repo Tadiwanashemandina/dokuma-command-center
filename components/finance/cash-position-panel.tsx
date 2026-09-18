@@ -32,7 +32,13 @@ export function CashPositionPanel({ initialData }: { initialData: CashPositionBy
         .order("name");
 
       const byCurrency = new Map<string, CashPositionByCurrency>();
-      for (const acc of accounts ?? []) {
+      for (const acc of (accounts ?? []) as Array<{
+        id: string;
+        name: string;
+        type: string;
+        currency: string;
+        current_balance: number;
+      }>) {
         const bucket = byCurrency.get(acc.currency) ?? { currency: acc.currency, totalBalance: 0, accounts: [] };
         bucket.totalBalance += Number(acc.current_balance);
         bucket.accounts.push({ id: acc.id, name: acc.name, type: acc.type, currentBalance: Number(acc.current_balance) });

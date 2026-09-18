@@ -11,11 +11,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const notifications = await getRecentNotifications();
 
   return (
-    <div className="flex min-h-screen bg-muted/40">
+    <div className="flex h-screen overflow-hidden bg-[#f6f8fb]">
       <NavSidebar role={profile.role} />
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <TopHeader profile={profile} notifications={notifications} />
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto px-5 py-7 sm:px-8 lg:px-10">{children}</main>
       </div>
     </div>
   );
