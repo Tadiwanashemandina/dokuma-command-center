@@ -11,8 +11,15 @@ import { risksRouter } from "./routes/risks.js";
 import { clientsRouter } from "./routes/clients.js";
 import { peopleRouter } from "./routes/people.js";
 import { kpiFeedRouter } from "./routes/kpi-feed.js";
+import { groupKpisRouter } from "./routes/group-kpis.js";
+import { qaIngestRouter } from "./routes/qa-ingest.js";
 import { dashboardRouter } from "./routes/dashboard.js";
+import { financeRouter } from "./routes/finance.js";
+import { financeImportRouter } from "./routes/finance-import.js";
+import { xeroRouter } from "./routes/xero.js";
+import { jiraRouter } from "./routes/jira.js";
 import { adminRouter } from "./routes/admin.js";
+import { cronRouter } from "./routes/cron.js";
 import { authRouter } from "./routes/auth.js";
 import { requireCsrfToken } from "./middleware/csrf.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
@@ -101,11 +108,51 @@ export function createApp(): Express {
   app.use("/api/people", peopleRouter);
   app.use("/api/dashboard", dashboardRouter);
 
+  /**
+   * Finance (§2.4). Role-gated per endpoint by the three finance tiers rather
+   * than at the mount, because read, write and approve differ within the
+   * router — `exec` may read every one of these and write none.
+   *
+   * The import router is mounted separately because it is the only one that
+   * parses multipart bodies; see the note in finance-import.ts.
+   */
+  app.use("/api/finance/import", financeImportRouter);
+  app.use("/api/finance", financeRouter);
+
+  /**
+   * Xero. Distinct from /api/finance above: that router owns this system's own
+   * ledger, this one owns the connection to an external accounting system.
+   * Keeping them apart means a Xero outage cannot take the finance pages down,
+   * and the finance endpoints have no dependency on the integration existing.
+   */
+  app.use("/api/xero", xeroRouter);
+
+  /**
+   * Jira. Like /api/xero, this owns a CONNECTION to an external system rather
+   * than any domain data of its own — so a Jira outage cannot take the project
+   * pages down, and /api/projects has no dependency on it existing.
+   */
+  app.use("/api/jira", jiraRouter);
+
   // User management (admin) and the audit trail (admin/exec/finance_manager).
   app.use("/api/admin", adminRouter);
 
+  // Scheduled jobs, authenticated by CRON_SECRET rather than a session.
+  app.use("/api/cron", cronRouter);
+
   // The Group platform's polling contract, frozen per D-13.
   app.use("/api/kpi-feed", kpiFeedRouter);
+
+  // The Group SBU register — 45 bespoke + 14 spine measures, and the signed
+  // daily feed that carries four of them upstream. Distinct from /api/kpi-feed
+  // above, which is the frozen twelve-metric contract and must not grow.
+  app.use("/api/group-kpis", groupKpisRouter);
+
+  // Inbound from Dokuma's QA / scanning system — the real source of the four
+  // DAILY measures. Authenticated by QA_INGEST_KEY rather than a session,
+  // because the caller is a machine with no user. Carries no CSRF cookie, so
+  // requireCsrfToken passes it through.
+  app.use("/api/qa-ingest", qaIngestRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

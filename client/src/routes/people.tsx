@@ -40,10 +40,10 @@ export function PeoplePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="People Connected" value={summary?.people_connected ?? "—"} />
-        <KpiCard label="Hours Today" value={summary?.hours_today ?? "—"} />
-        <KpiCard label="Utilisation" value={summary?.utilisation_pct ?? "—"} unit="%" />
-        <KpiCard label="Screenshots Taken" value={summary?.screenshots_taken ?? "—"} />
+        <KpiCard label="People Connected" value={summary?.people_connected ?? "—"} accent="teal" />
+        <KpiCard label="Hours Today" value={summary?.hours_today ?? "—"} accent="steel" />
+        <KpiCard label="Utilisation" value={summary?.utilisation_pct ?? "—"} unit="%" accent="status-green" />
+        <KpiCard label="Screenshots Taken" value={summary?.screenshots_taken ?? "—"} accent="gold" />
       </div>
 
       {isPending && (

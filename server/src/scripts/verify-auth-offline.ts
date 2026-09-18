@@ -28,7 +28,13 @@ import {
   isMfaRequiredForRole,
 } from "../services/mfa.js";
 import { authenticator } from "otplib";
-import { USER_ROLES, MFA_REQUIRED_ROLES, departmentScopeForRole, roleHomePath } from "@dokuma/shared";
+import {
+  USER_ROLES,
+  MFA_REQUIRED_ROLES,
+  MFA_POLICY_ROLES,
+  departmentScopeForRole,
+  roleHomePath,
+} from "@dokuma/shared";
 import { loginSchema, changePasswordSchema, mfaVerifySchema } from "../routes/auth.schemas.js";
 
 let passed = 0;
@@ -111,16 +117,21 @@ async function main(): Promise<void> {
   console.log("\n== Role policy (§4.1, §4.4, §4.5) ==");
 
   check("nine roles defined", USER_ROLES.length === 9);
+
+  // MFA is currently disabled (MFA_ENABLED === false in shared/src/roles.ts).
+  // The policy list is still asserted so that flipping the flag back on
+  // restores exactly the four Finance/HR roles it always covered.
   check(
-    "exactly the four Finance/HR roles require MFA",
-    MFA_REQUIRED_ROLES.length === 4 &&
+    "the MFA policy still names exactly the four Finance/HR roles",
+    MFA_POLICY_ROLES.length === 4 &&
       ["finance_officer", "finance_manager", "hr_officer", "hr_manager"].every((r) =>
-        (MFA_REQUIRED_ROLES as readonly string[]).includes(r),
+        (MFA_POLICY_ROLES as readonly string[]).includes(r),
       ),
   );
-  check("admin is deliberately exempt from MFA", !isMfaRequiredForRole("admin"));
-  check("exec is deliberately exempt from MFA", !isMfaRequiredForRole("exec"));
-  check("finance_officer requires MFA", isMfaRequiredForRole("finance_officer"));
+  check("MFA is disabled, so no role requires it", MFA_REQUIRED_ROLES.length === 0);
+  check("admin is not asked for MFA", !isMfaRequiredForRole("admin"));
+  check("exec is not asked for MFA", !isMfaRequiredForRole("exec"));
+  check("finance_officer is not asked for MFA while disabled", !isMfaRequiredForRole("finance_officer"));
 
   check("finance roles scope to finance", departmentScopeForRole("finance_manager") === "finance");
   check("hr roles scope to hr", departmentScopeForRole("hr_officer") === "hr");

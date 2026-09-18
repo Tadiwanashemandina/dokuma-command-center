@@ -37,3 +37,17 @@ export function dateOnly(value: Date | null | undefined): string | null {
 export function timestamp(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
 }
+
+/**
+ * Collapses `undefined` to `null` for an optional column.
+ *
+ * Mongoose infers a `default: null` path as `T | null | undefined` — the
+ * `undefined` arm is reachable via `.lean()` on a document written before the
+ * field existed. The wire contract has only `T | null`, and letting
+ * `undefined` through would drop the key from the JSON entirely rather than
+ * sending an explicit null, so a client destructuring it gets `undefined`
+ * where it expected an absent-but-present field.
+ */
+export function nullable<T>(value: T | null | undefined): T | null {
+  return value ?? null;
+}

@@ -33,6 +33,7 @@ export interface DeckFigure {
 export function CommandDeck({
   eyebrow,
   title,
+  hideTitle,
   subtitle,
   figures,
   attention,
@@ -41,6 +42,12 @@ export function CommandDeck({
 }: {
   eyebrow: React.ReactNode;
   title: string;
+  /**
+   * Renders the heading for assistive tech only. The `<h1>` is always present
+   * — a page needs one — but a deck whose figures already announce the section
+   * can drop the visible line rather than repeat itself.
+   */
+  hideTitle?: boolean;
   subtitle?: string;
   figures: DeckFigure[];
   attention: AttentionItem[];
@@ -56,10 +63,20 @@ export function CommandDeck({
       {/* Title row -------------------------------------------------------- */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal">
+          <div
+            className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal ${
+              hideTitle ? "" : "mb-3"
+            }`}
+          >
             {eyebrow}
           </div>
-          <h1 className="font-serif text-[32px] font-semibold leading-tight tracking-tight text-white sm:text-[38px]">
+          <h1
+            className={
+              hideTitle
+                ? "sr-only"
+                : "font-serif text-[32px] font-semibold leading-tight tracking-tight text-white sm:text-[38px]"
+            }
+          >
             {title}
           </h1>
           {subtitle && (

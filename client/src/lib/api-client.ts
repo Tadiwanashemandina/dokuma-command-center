@@ -105,7 +105,18 @@ export async function apiFetch<T>(path: string, init: ApiFetchOptions = {}): Pro
   const method = (requestInit.method ?? "GET").toUpperCase();
 
   const headers = new Headers(requestInit.headers);
-  if (requestInit.body !== undefined && !headers.has("Content-Type")) {
+  /**
+   * A FormData body must NOT get an explicit Content-Type.
+   *
+   * multipart/form-data carries a generated boundary token in its header, and
+   * only the browser knows what it is. Setting `multipart/form-data` by hand —
+   * or, as this did before, defaulting to `application/json` — produces a
+   * header without a boundary, and the server cannot parse a single field. The
+   * upload then fails with "no file was uploaded" for a request that plainly
+   * contains one.
+   */
+  const isFormData = typeof FormData !== "undefined" && requestInit.body instanceof FormData;
+  if (requestInit.body !== undefined && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -181,4 +192,14 @@ export const api = {
 
   delete: <T>(path: string, init?: ApiFetchOptions) =>
     apiFetch<T>(path, { ...init, method: "DELETE" }),
+
+  /**
+   * POST a multipart body — file uploads.
+   *
+   * The FormData is passed through untouched so the browser sets
+   * `Content-Type` with its own boundary; see the note in `apiFetch`. CSRF and
+   * credentials are handled exactly as for any other mutating request.
+   */
+  postForm: <T>(path: string, body: FormData, init?: ApiFetchOptions) =>
+    apiFetch<T>(path, { ...init, method: "POST", body }),
 };

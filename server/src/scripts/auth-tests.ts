@@ -271,30 +271,32 @@ async function main(): Promise<void> {
     }
 
     // -----------------------------------------------------------------------
-    console.log("\n== MFA gating: the four Finance/HR roles (§4.4) ==");
-    for (const role of ["finance_officer", "finance_manager", "hr_officer", "hr_manager"] as const) {
+    // MFA is currently disabled (MFA_ENABLED === false in shared/src/roles.ts),
+    // so *no* role is gated. These checks assert the disabled state; restore
+    // the "is directed to MFA enrollment" expectations when the flag flips back.
+    console.log("\n== MFA disabled: no role is gated (§4.4) ==");
+    for (const role of [
+      "finance_officer",
+      "finance_manager",
+      "hr_officer",
+      "hr_manager",
+      "admin",
+      "exec",
+    ] as const) {
       const { client, response } = await login(role);
       check(`${role} can authenticate`, response.status === 200);
-      check(
-        `${role} is directed to MFA enrollment, not the app`,
-        data(response)["mfaNext"] === "enroll",
-      );
+      check(`${role} reaches the app without MFA`, data(response)["mfaNext"] === null);
 
       const me = await client.get("/api/auth/me");
-      check(`${role} reports mfaRequired`, data(me)["mfaRequired"] === true);
-      check(`${role} is not yet mfaVerified`, data(me)["mfaVerified"] === false);
-    }
-
-    console.log("\n== MFA exemption: admin and exec (§4.4) ==");
-    for (const role of ["admin", "exec"] as const) {
-      const { client, response } = await login(role);
-      check(`${role} is not sent to MFA`, data(response)["mfaNext"] === null);
-      const me = await client.get("/api/auth/me");
-      check(`${role} reports mfaRequired false (deliberate exemption)`, data(me)["mfaRequired"] === false);
+      check(`${role} reports mfaRequired false while MFA is off`, data(me)["mfaRequired"] === false);
     }
 
     // -----------------------------------------------------------------------
-    console.log("\n== MFA enrollment flow (§4.4) ==");
+    // The enroll/challenge/recover endpoints stay live even with gating off, so
+    // this block still exercises them end to end — it is what proves the
+    // machinery is intact for when MFA_ENABLED flips back to true. Only the
+    // *routing* assertions changed: logins no longer carry an mfaNext.
+    console.log("\n== MFA enrollment flow, opt-in while gating is off (§4.4) ==");
     {
       const { client } = await login("finance_officer");
 
@@ -331,11 +333,12 @@ async function main(): Promise<void> {
       check("the session is now mfaVerified (aal2)", data(elevated)["mfaVerified"] === true);
       check("mfaNext is cleared once verified", data(elevated)["mfaNext"] === null);
 
-      // A second login must challenge rather than re-enroll.
+      // With gating off a later login is no longer *sent* to verify, but the
+      // factor is still on the user and the challenge endpoint still honours it.
       const second = await login("finance_officer");
       check(
-        "a later login is sent to verify, not enroll",
-        data(second.response)["mfaNext"] === "verify",
+        "a later login is not forced to verify while MFA is off",
+        data(second.response)["mfaNext"] === null,
       );
 
       const challenge = await second.client.post("/api/auth/mfa/challenge", {

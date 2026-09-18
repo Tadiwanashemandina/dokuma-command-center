@@ -43,8 +43,8 @@ export function DeliveryPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard label="Commits (last 7 days)" value={totals?.commits ?? "—"} />
-        <KpiCard label="Deploys (last 7 days)" value={totals?.deploys ?? "—"} />
+        <KpiCard label="Commits (last 7 days)" value={totals?.commits ?? "—"} accent="steel" />
+        <KpiCard label="Deploys (last 7 days)" value={totals?.deploys ?? "—"} accent="teal" />
         <KpiCard label="Open Defects" value={totals?.open_defects ?? "—"} accent="status-red" />
       </div>
 

@@ -1,5 +1,14 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { EXEC_ONLY, FINANCE_READ, HR_ALL, ADMIN_ONLY, type UserRole } from "@dokuma/shared";
+import {
+  EXEC_ONLY,
+  FINANCE_READ,
+  FINANCE_WRITE,
+  FINANCE_APPROVE,
+  HR_ALL,
+  ADMIN_ONLY,
+  GROUP_CAPTURE,
+  type UserRole,
+} from "@dokuma/shared";
 
 /** Mirrors the Express gate on /api/admin/audit-log (migration 0013). */
 const AUDIT_READERS: readonly UserRole[] = ["admin", "exec", "finance_manager"];
@@ -20,11 +29,25 @@ import { ClientsPage } from "@/routes/clients";
 import { PeoplePage } from "@/routes/people";
 import { CeoHomePage } from "@/routes/ceo-home";
 import { CompanyPage } from "@/routes/company";
+import { GroupReportingPage } from "@/routes/group-reporting";
+import { GroupCapturePage } from "@/routes/group-capture";
 import { MfaEnrollPage } from "@/routes/mfa-enroll";
 import { MfaVerifyPage } from "@/routes/mfa-verify";
 import { SetPasswordPage } from "@/routes/set-password";
 import { AdminUsersPage } from "@/routes/admin-users";
 import { AdminAuditPage } from "@/routes/admin-audit";
+import { FinancePage } from "@/routes/finance";
+import { FinanceTransactionsPage } from "@/routes/finance-transactions";
+import { FinanceCreditorsPage } from "@/routes/finance-creditors";
+import { FinancePaymentNoticesPage } from "@/routes/finance-payment-notices";
+import { FinanceReportsPage } from "@/routes/finance-reports";
+import { FinanceReportDetailPage } from "@/routes/finance-report-detail";
+import {
+  FinanceWeeklyReportNewPage,
+  FinanceMonthlyReportNewPage,
+} from "@/routes/finance-report-new";
+import { FinanceImportPage } from "@/routes/finance-import";
+import { XeroSettingsPage } from "@/routes/xero-settings";
 
 /**
  * The route tree — the replacement for Next's file-system routing and its
@@ -81,7 +104,21 @@ export function App() {
               <Route element={<RequireRole roles={EXEC_ONLY} />}>
                 <Route path="/" element={<CeoHomePage />} />
                 <Route path="/company" element={<CompanyPage />} />
+                {/* What Dokuma reports UPWARD to the Group — the 59-measure
+                    register and the state of the feed carrying it. Exec-tier
+                    like the other board-level surfaces; capture is wider and is
+                    gated at the endpoint, not here. */}
+                <Route path="/group" element={<GroupReportingPage />} />
                 <Route path="/people" element={<PeoplePage />} />
+              </Route>
+
+              {/* Month-end capture is deliberately WIDER than exec: §9 of the
+                  Group specification describes these figures as typed in by
+                  finance and operations staff. Gating it on exec would mean the
+                  only people allowed to enter the numbers are the people the
+                  numbers are for. The endpoint enforces the same list. */}
+              <Route element={<RequireRole roles={GROUP_CAPTURE} />}>
+                <Route path="/group/capture" element={<GroupCapturePage />} />
               </Route>
 
               {/* Any authenticated role (inventory §10, D-2: these had no
@@ -94,17 +131,35 @@ export function App() {
               <Route path="/delivery" element={<DeliveryPage />} />
               <Route path="/meetings" element={<MeetingsPage />} />
 
-              {/* Finance — the four finance-tier roles. */}
+              {/* Finance — the four finance-tier roles.
+                  Note the nested gates below: FINANCE_READ is the floor for
+                  the section, and the sub-gates narrow it to match the
+                  endpoints each page calls. A finance_officer reaching
+                  /finance/xero would find every control on it inert, and an
+                  exec reaching /finance/import would get a 403 on the first
+                  upload — so neither route is offered to them at all. */}
               <Route element={<RequireRole roles={FINANCE_READ} />}>
-                <Route path="/finance" element={<PlaceholderPage title="Finance" />} />
-                <Route path="/finance/transactions" element={<PlaceholderPage title="Transactions" />} />
-                <Route path="/finance/creditors" element={<PlaceholderPage title="Creditors" />} />
-                <Route path="/finance/payment-notices" element={<PlaceholderPage title="Payment Notices" />} />
-                <Route path="/finance/reports" element={<PlaceholderPage title="Finance Reports" />} />
-                <Route path="/finance/reports/:id" element={<PlaceholderPage title="Report" />} />
-                <Route path="/finance/reports/weekly/new" element={<PlaceholderPage title="New Weekly Report" />} />
-                <Route path="/finance/reports/monthly/new" element={<PlaceholderPage title="New Monthly Report" />} />
-                <Route path="/finance/import" element={<PlaceholderPage title="Import Transactions" />} />
+                <Route path="/finance" element={<FinancePage />} />
+                <Route path="/finance/transactions" element={<FinanceTransactionsPage />} />
+                <Route path="/finance/creditors" element={<FinanceCreditorsPage />} />
+                <Route path="/finance/payment-notices" element={<FinancePaymentNoticesPage />} />
+                <Route path="/finance/reports" element={<FinanceReportsPage />} />
+                <Route path="/finance/reports/weekly/new" element={<FinanceWeeklyReportNewPage />} />
+                <Route path="/finance/reports/monthly/new" element={<FinanceMonthlyReportNewPage />} />
+                {/* After the two /new routes: "weekly" would otherwise match
+                    :id and render the detail page for a non-existent report. */}
+                <Route path="/finance/reports/:id" element={<FinanceReportDetailPage />} />
+
+                {/* Importing writes transactions — FINANCE_WRITE, matching
+                    requireRole() on /api/finance/import/*. */}
+                <Route element={<RequireRole roles={FINANCE_WRITE} />}>
+                  <Route path="/finance/import" element={<FinanceImportPage />} />
+                </Route>
+
+                {/* Every Xero mutation is approve-tier server-side. */}
+                <Route element={<RequireRole roles={FINANCE_APPROVE} />}>
+                  <Route path="/finance/xero" element={<XeroSettingsPage />} />
+                </Route>
               </Route>
 
               {/* HR */}

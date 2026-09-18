@@ -15,11 +15,20 @@
     "seed:users": "tsx src/scripts/seed-users.ts",
     "test:auth": "tsx src/scripts/auth-tests.ts",
     "verify:auth": "tsx src/scripts/verify-auth-offline.ts",
+    "verify:group-kpis": "tsx src/scripts/verify-group-kpis.ts",
     "test:api": "tsx src/scripts/api-tests.ts",
-    "invite": "tsx src/scripts/invite-user.ts"
+    "invite": "tsx src/scripts/invite-user.ts",
+    "verify:egress": "tsx src/scripts/verify-feed-egress.ts",
+    "verify:finance": "tsx src/scripts/verify-finance.ts",
+    "check:oneplatform": "tsx src/scripts/check-oneplatform.ts",
+    "feed:preview": "tsx src/scripts/feed-preview.ts",
+    "post:reading": "tsx src/scripts/post-reading.ts",
+    "verify:jira": "tsx src/scripts/verify-jira.ts"
   },
   "dependencies": {
     "@dokuma/shared": "*",
+    "@react-pdf/renderer": "^4.9.0",
+    "@types/multer": "^2.2.0",
     "argon2": "^0.41.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -27,8 +36,11 @@
     "express": "^4.21.2",
     "helmet": "^8.0.0",
     "mongoose": "^8.9.2",
+    "multer": "^2.4.0",
     "otplib": "^12.0.1",
     "qrcode": "^1.5.4",
+    "xero-node": "^20.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

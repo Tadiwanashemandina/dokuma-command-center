@@ -46,8 +46,16 @@
       "schedule": "5 0 * * *"
     },
     {
+      "path": "/api/cron/xero-sync",
+      "schedule": "30 3 * * *"
+    },
+    {
       "path": "/api/cron/group-feed",
       "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/jira-sync",
+      "schedule": "0 3 * * *"
     }
   ]
 }

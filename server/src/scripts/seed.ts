@@ -25,6 +25,7 @@ import {
 } from "../db/models/index.js";
 import { recomputeAccountBalance } from "../services/finance/balances.js";
 import { refreshKpiFeed } from "../services/kpi.js";
+import { seedGroupKpis } from "./seed-group-kpis.js";
 import {
   ACTIVITY_RECORDS,
   CLIENTS,
@@ -415,6 +416,12 @@ export async function seedAll({ quiet = false }: { quiet?: boolean } = {}): Prom
 
   log("[seed] refreshing KPI feed…");
   await refreshKpiFeed();
+
+  // The Group SBU register — 30 days of the four daily measures plus this
+  // month's manual figures, so /group renders against real data.
+  log("[seed] group KPI register…");
+  const groupKpis = await seedGroupKpis();
+  log(`[seed]   ${groupKpis.dailyRows} daily + ${groupKpis.monthlyRows} monthly readings`);
 }
 
 async function main(): Promise<void> {

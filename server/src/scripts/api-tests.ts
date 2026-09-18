@@ -21,6 +21,7 @@ import { User } from "../db/models/index.js";
 import { hashPassword } from "../services/password.js";
 import { seedAll } from "./seed.js";
 import { USER_ROLES, type UserRole } from "@dokuma/shared";
+import { testGroupKpis } from "./api-tests-group-kpis.js";
 
 const PASSWORD = "DokumaTest123!";
 
@@ -565,11 +566,12 @@ async function testMfaFlow(baseUrl: string): Promise<void> {
     password: PASSWORD,
   });
   equal("an MFA role logs in successfully", login.status, 200);
-  equal("but is told to enroll first", data(login)["mfaNext"], "enroll");
 
-  // Authenticated but not verified: every other endpoint is refused.
-  const blocked = await client.get("/api/projects");
-  equal("an unverified MFA session is refused elsewhere → 403", blocked.status, 403);
+  // MFA gating is currently off (MFA_ENABLED === false in shared/src/roles.ts),
+  // so the role is neither told to enroll nor blocked from the rest of the API.
+  // Enrollment below still works as an opt-in, which keeps the endpoints covered.
+  equal("and is not gated while MFA is off", data(login)["mfaNext"], null);
+  equal("the session reaches other endpoints immediately", (await client.get("/api/projects")).status, 200);
 
   const enroll = await client.post("/api/auth/mfa/enroll");
   equal("enroll → 200", enroll.status, 200);
@@ -594,13 +596,14 @@ async function testMfaFlow(baseUrl: string): Promise<void> {
   // The session is now aal2 and everything opens up.
   equal("the verified session reaches other endpoints", (await client.get("/api/projects")).status, 200);
 
-  // A fresh login now needs a challenge, not another enrollment.
+  // A fresh login is no longer forced to challenge, but the enrolled factor is
+  // still accepted by the challenge endpoint.
   const second = new Client(baseUrl);
   const relogin = await second.post("/api/auth/login", {
     email: "hr_officer@dokuma.local",
     password: PASSWORD,
   });
-  equal("a later login asks to verify, not to enroll", data(relogin)["mfaNext"], "verify");
+  equal("a later login is not forced to verify while MFA is off", data(relogin)["mfaNext"], null);
 
   const challenge = await second.post("/api/auth/mfa/challenge", {
     code: authenticator.generate(secret),
@@ -803,6 +806,17 @@ async function main(): Promise<void> {
     await testDashboard(baseUrl);
     await testMfaFlow(baseUrl);
     await testAdmin(baseUrl);
+
+    // The Group reporting surface. Passed the harness's own helpers so there
+    // stays one counter and one cookie-aware client implementation.
+    await testGroupKpis({
+      baseUrl,
+      check,
+      equal,
+      signIn,
+      anonClient: (url) => new Client(url),
+      data,
+    });
 
     console.log(`\n${passed}/${passed + failed} checks passed.`);
     if (failed > 0) console.log(`${failed} FAILED.`);

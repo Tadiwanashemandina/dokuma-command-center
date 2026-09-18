@@ -163,6 +163,10 @@ export function CeoHomePage() {
           </>
         }
         title="Dashboard"
+        /* The figures below say what this page is faster than a heading can,
+           so the <h1> is kept for the document outline and screen readers
+           without taking up space on screen. */
+        hideTitle
         figures={figures}
         attention={attention}
         isPending={kpis.isPending}
