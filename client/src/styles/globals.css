@@ -36,6 +36,31 @@
 
   --font-sans: var(--font-sans-body), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif-heading), Cambria, Georgia, "Times New Roman", serif;
+
+  /* Chart series. NOT the brand hues directly: validated with the dataviz
+     skill's script, the raw brand colours FAIL as chart marks on a light
+     surface — teal is too light (L 0.786), navy too dark and nearly grey
+     (L 0.233, chroma 0.07), and teal/gold fall under 3:1 contrast. Brand
+     colours are built for large areas; a 2px line needs more contrast.
+     These darkened variants pass all five checks in BOTH light and dark mode.
+     Assign in fixed order, never cycled. */
+  --color-series-1: #2F6DA8;
+  --color-series-2: #1FA595;
+  --color-series-3: #B07E1E;
+  --color-series-4: #7B4FA8;
+
+  /* Elevation. The first layer is a spread-0 shadow acting as a hairline, and
+     only then a real blur — Vercel's z-ladder. A blurred shadow on a resting
+     card claims it is floating, which is a lie the eye reads as mush; a
+     hairline says "distinct region", which is true. Tinted navy rather than
+     black so it belongs to the brand. */
+  --shadow-card: 0 0 0 1px rgba(13, 27, 62, 0.07), 0 1px 2px rgba(13, 27, 62, 0.04);
+  --shadow-card-hover: 0 0 0 1px rgba(13, 27, 62, 0.12), 0 4px 12px rgba(13, 27, 62, 0.08);
+  --shadow-overlay: 0 8px 16px -4px rgba(13, 27, 62, 0.06), 0 24px 32px -8px rgba(13, 27, 62, 0.12);
+
+  /* Motion. ease-out (fast start, slow settle) reads as arriving and settling
+     rather than accelerating away. */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* Semantic shadcn tokens — kept as live var() references (not baked-in
@@ -84,7 +109,10 @@
 
 @layer base {
   :root {
-    --background: #FFFFFF;
+    /* The page is a faint navy-tinted off-white and the card is pure white, so
+       every card gains elevation with no shadow at all — it is simply brighter
+       than its surroundings. Depth from the surface ladder, not from blur. */
+    --background: #F7F9FC;
     --foreground: #0D1B3E;
     --card: #FFFFFF;
     --card-foreground: #0D1B3E;
@@ -100,10 +128,12 @@
     --accent-foreground: #0D1B3E;
     --destructive: #C24444;
     --destructive-foreground: #FFFFFF;
-    --border: #E2E8F0;
-    --input: #E2E8F0;
+    --border: #E4E9F2;
+    --input: #E4E9F2;
     --ring: #3E76B0;
-    --radius: 1rem;
+    /* 12px. 16px reads as a consumer app; Linear uses 12px for cards, Stripe
+       ~8px, Vercel 6px. Radius is read as "how serious is this software". */
+    --radius: 0.75rem;
     --sidebar: #0D1B3E;
     --sidebar-foreground: #FFFFFF;
     --sidebar-primary: #4FD1C5;
@@ -334,4 +364,116 @@
     opacity: 0;
     visibility: hidden;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Entrance stagger
+   ---------------------------------------------------------------------------
+   A grid of cards that appears all at once reads as a screenshot. Fading each
+   one in 35ms after the last reads as a page assembling itself — the eye
+   follows the sequence and lands on the first card rather than nowhere.
+
+   Deliberately MOUNT-ONLY. It is applied on first paint and never re-runs on
+   refetch: re-animating a grid every time React Query revalidates would make
+   the whole page twitch on a window focus, which is the "lifeless vs. jittery"
+   line. `both` holds the pre-state so nothing flashes at full opacity first.
+
+   The 8th child is the cap. Past that the delay is longer than the data takes
+   to arrive, and the stagger stops being a flourish and becomes a wait. */
+@keyframes dokuma-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dokuma-stagger > * {
+  animation: dokuma-rise-in 420ms var(--ease-out-quart) both;
+}
+
+.dokuma-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.dokuma-stagger > *:nth-child(2) { animation-delay: 35ms; }
+.dokuma-stagger > *:nth-child(3) { animation-delay: 70ms; }
+.dokuma-stagger > *:nth-child(4) { animation-delay: 105ms; }
+.dokuma-stagger > *:nth-child(5) { animation-delay: 140ms; }
+.dokuma-stagger > *:nth-child(6) { animation-delay: 175ms; }
+.dokuma-stagger > *:nth-child(7) { animation-delay: 210ms; }
+.dokuma-stagger > *:nth-child(n + 8) { animation-delay: 245ms; }
+
+/* Motion is the decoration here, not the content: with reduced motion the
+   cards simply are, with no fade and no travel. */
+@media (prefers-reduced-motion: reduce) {
+  .dokuma-stagger > * {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Command deck
+   ---------------------------------------------------------------------------
+   The executive header is a dark slab rather than another white card. Three
+   things make it read as a surface with depth instead of a navy rectangle:
+
+   1. A two-stop gradient on a diagonal, so the light has a direction.
+   2. A faint grid, masked so it fades out toward the bottom-right — the eye
+      reads "instrument panel" from the ruling without ever focusing on it.
+   3. A soft teal bloom in the top-right corner, which is where the eye enters
+      a left-aligned header and is the only place the brand accent appears at
+      any size.
+
+   All three are CSS only: no images, no extra requests, no layout cost. */
+.dokuma-deck {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 88% -10%, rgba(79, 209, 197, 0.18) 0%, transparent 55%),
+    linear-gradient(135deg, #12255A 0%, #0D1B3E 48%, #0A1530 100%);
+}
+
+/* The ruling. 1px lines at 40px pitch, held at low alpha so they register as
+   texture rather than as a table. */
+.dokuma-deck::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  background-size: 40px 40px;
+  /* Fades the grid out before it reaches the text, so nothing is read through
+     a lattice. */
+  -webkit-mask-image: radial-gradient(90% 90% at 15% 10%, #000 20%, transparent 78%);
+  mask-image: radial-gradient(90% 90% at 15% 10%, #000 20%, transparent 78%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* A single hairline of brand colour along the top edge — the detail that makes
+   a dark panel look deliberate rather than merely dark. */
+.dokuma-deck::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(79, 209, 197, 0.55) 22%,
+    rgba(79, 209, 197, 0.55) 58%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Figures set on the deck. `font-variant-numeric` keeps the digits aligned and
+   the tight tracking is what stops large numerals reading as loose. */
+.dokuma-figure {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+  line-height: 1;
 }

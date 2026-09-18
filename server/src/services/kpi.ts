@@ -10,6 +10,7 @@ import {
 import {
   addDays,
   currentDate,
+  toDateOnly,
   decimalToNumber,
   decimalToString,
   formatDateOnly,
@@ -272,4 +273,77 @@ export async function getKpiFeed(): Promise<KpiFeedRow[]> {
       as_of_date: formatDateOnly(row.asOfDate) ?? "",
       updated_at: row.updatedAt.toISOString(),
     }));
+}
+
+/* --------------------------------------------------------------------- *
+ * KPI history — the data behind sparklines and deltas
+ * --------------------------------------------------------------------- */
+
+/** One metric's values over time, oldest first. */
+export interface KpiSeries {
+  metric_name: KpiMetricName;
+  unit: string | null;
+  /** Oldest → newest, so a sparkline can render it directly. */
+  points: { as_of_date: string; value: number | null }[];
+  /** The most recent value, or null when the series is empty. */
+  current: number | null;
+  /**
+   * Change against the oldest point in the window. Null when there is only one
+   * snapshot — which is the honest answer, not zero. A dashboard that shows
+   * "0%" when it means "we have no history" is lying quietly.
+   */
+  delta: number | null;
+  deltaPct: number | null;
+}
+
+/**
+ * Reads `kpi_feed` history for sparklines and trend deltas.
+ *
+ * `kpi_feed` has always been shaped to accumulate one row per metric per day —
+ * that is what its `(company, metric_name, as_of_date)` unique key is for — but
+ * nothing wrote it on a schedule, so it held a single snapshot and no card
+ * could show a trend. The cron at `/api/cron/kpi-snapshot` fills it daily.
+ *
+ * Until enough days accumulate, `points` is short and `delta` is null. Callers
+ * must render that as "no trend yet" rather than inventing one.
+ */
+export async function getKpiHistory(days = 30): Promise<KpiSeries[]> {
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - days);
+
+  const rows = await KpiFeed.find({ asOfDate: { $gte: toDateOnly(since) } })
+    .sort({ asOfDate: 1 })
+    .lean();
+
+  const byMetric = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const bucket = byMetric.get(row.metricName) ?? [];
+    bucket.push(row);
+    byMetric.set(row.metricName, bucket);
+  }
+
+  return KPI_METRIC_NAMES.map((metricName) => {
+    const series = byMetric.get(metricName) ?? [];
+    const points = series.map((row) => ({
+      as_of_date: formatDateOnly(row.asOfDate) ?? "",
+      value: decimalToNumber(row.value),
+    }));
+
+    const current = points.at(-1)?.value ?? null;
+    const first = points[0]?.value ?? null;
+
+    // A delta needs two distinct snapshots. One point means no trend exists.
+    const hasTrend = points.length >= 2 && first !== null && current !== null;
+
+    return {
+      metric_name: metricName,
+      unit: series.at(-1)?.unit ?? null,
+      points,
+      current,
+      delta: hasTrend ? Number((current - first).toFixed(2)) : null,
+      // Guard the zero denominator rather than emitting Infinity.
+      deltaPct:
+        hasTrend && first !== 0 ? Number((((current - first) / Math.abs(first)) * 100).toFixed(1)) : null,
+    };
+  });
 }

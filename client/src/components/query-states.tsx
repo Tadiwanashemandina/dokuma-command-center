@@ -91,3 +91,35 @@ export function EmptyState({ message, hint }: { message: string; hint?: string }
     </div>
   );
 }
+
+/**
+ * A KPI-card-shaped placeholder.
+ *
+ * Matches the real card's geometry — dot, eyebrow, figure, footer row — so the
+ * layout does not reflow when data lands. A generic grey rectangle makes the
+ * page jump the moment it is replaced, which is the thing that reads as cheap.
+ */
+export function KpiCardSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          className="rounded-[var(--radius)] bg-card p-5 shadow-[var(--shadow-card)]"
+          aria-hidden="true"
+        >
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-1.5 w-1.5 rounded-full" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+          {/* The figure's real height, so the card does not grow on load. */}
+          <Skeleton className="mt-3 h-[30px] w-20" />
+          <div className="mt-4 flex items-end justify-between">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}

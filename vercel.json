@@ -39,5 +39,15 @@
         }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/kpi-snapshot",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/group-feed",
+      "schedule": "30 4 * * *"
+    }
   ]
 }

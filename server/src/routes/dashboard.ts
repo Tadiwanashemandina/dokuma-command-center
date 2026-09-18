@@ -2,7 +2,7 @@ import { Router } from "express";
 import { EXEC_ONLY } from "@dokuma/shared";
 import { AiDailyBrief, Milestone, Project } from "../db/models/index.js";
 import { requireRole } from "../middleware/auth.js";
-import { computeCeoDashboardKpis } from "../services/kpi.js";
+import { computeCeoDashboardKpis, getKpiHistory } from "../services/kpi.js";
 import { handle, ok } from "./helpers.js";
 import { dateOnly } from "./serializers.js";
 
@@ -123,5 +123,24 @@ dashboardRouter.get(
         project_name: names.get(m.projectId) ?? null,
       })),
     );
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// GET /api/dashboard/kpi-history — the data behind sparklines and deltas
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-metric history from `kpi_feed`, oldest first.
+ *
+ * Returns short series (and null deltas) until the daily cron has accumulated
+ * enough days. That is the honest answer — a card must render "no trend yet"
+ * rather than invent a comparison it does not have.
+ */
+dashboardRouter.get(
+  "/kpi-history",
+  ...requireRole(EXEC_ONLY),
+  handle(async (_req, res) => {
+    ok(res, { series: await getKpiHistory(30) });
   }),
 );

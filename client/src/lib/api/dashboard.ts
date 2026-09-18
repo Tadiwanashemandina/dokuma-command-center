@@ -52,3 +52,23 @@ export function getDailyBrief(): Promise<DailyBrief | null> {
 export function getUpcomingMilestones(): Promise<UpcomingMilestone[]> {
   return api.get<UpcomingMilestone[]>("/dashboard/upcoming-milestones");
 }
+
+/**
+ * One metric's history, oldest first.
+ *
+ * `delta` is null — not 0 — when there are fewer than two snapshots. The daily
+ * cron has to run at least twice before any comparison is honest, and a card
+ * must say "Collecting trend" rather than show a fabricated 0%.
+ */
+export interface KpiSeries {
+  metric_name: string;
+  unit: string | null;
+  points: { as_of_date: string; value: number | null }[];
+  current: number | null;
+  delta: number | null;
+  deltaPct: number | null;
+}
+
+export function getKpiHistory(): Promise<{ series: KpiSeries[] }> {
+  return api.get<{ series: KpiSeries[] }>("/dashboard/kpi-history");
+}
