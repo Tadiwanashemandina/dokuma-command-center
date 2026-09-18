@@ -1,7 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+# Unanchored, so this covers the workspace package directories too
+# (client/, server/, shared/) — not just the root install. The anchored
+# form let client/node_modules/.vite/* get committed.
+node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
