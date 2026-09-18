@@ -318,3 +318,67 @@ export const timestampOptions = {
 export const createdAtOnly = {
   timestamps: { createdAt: "createdAt", updatedAt: false },
 } as const;
+
+// ---------------------------------------------------------------------------
+// Derived figures
+// ---------------------------------------------------------------------------
+
+/**
+ * `v_project_margins` (migration 0003) — `(budget − cost) / budget × 100`,
+ * to two decimal places.
+ *
+ * Lives in this module, rather than beside the other finance arithmetic in
+ * `services/finance/balances.ts`, because the `ProjectFinance.marginPct`
+ * virtual needs it. A model importing from a service that imports the model
+ * barrel is a require cycle, and the symptom would be a model that is
+ * undefined at registration time — a failure that appears far from its cause.
+ * This file already has no dependencies of its own, which is what makes it the
+ * safe home.
+ *
+ * Returns null when budget is absent or zero, matching the view's CASE
+ * exactly. Null and 0 are different facts: 0 means "this project has consumed
+ * its entire budget", null means "no budget was ever set". Rendering the
+ * second as the first puts a red zero against a project nobody has budgeted.
+ *
+ * The division runs on scaled integers, like every other figure in the finance
+ * module — `(budget − cost)` is a difference of two exact decimals, and doing
+ * it in float64 reintroduces the error Decimal128 storage exists to prevent.
+ */
+export function computeMarginPct(
+  budget: string | null,
+  costToDate: string | null,
+): number | null {
+  if (budget === null) return null;
+
+  const budgetScaled = decimalStringToScaled(budget);
+  if (budgetScaled === 0n) return null;
+
+  const costScaled = costToDate === null ? 0n : decimalStringToScaled(costToDate);
+
+  // ×10000 before dividing retains two decimal places of the percentage in
+  // integer arithmetic; the quotient is small enough that the final Number()
+  // conversion is exact.
+  const numerator = (budgetScaled - costScaled) * 10000n;
+  const denominator = budgetScaled < 0n ? -budgetScaled : budgetScaled;
+  const negative = numerator < 0n;
+  const magnitude = negative ? -numerator : numerator;
+
+  // Half-up, matching Postgres `numeric` rounding.
+  const rounded = (magnitude + denominator / 2n) / denominator;
+  return Number(negative ? -rounded : rounded) / 100;
+}
+
+/**
+ * A fixed-scale decimal string → exact scaled bigint.
+ *
+ * A local copy of the same conversion `services/finance/balances.ts` exports,
+ * kept here only to avoid the require cycle described above. It is deliberately
+ * narrow — string input only — so it cannot drift into being a second general
+ * conversion helper.
+ */
+function decimalStringToScaled(raw: string, scale: number = MONEY_SCALE): bigint {
+  const normalized = roundDecimalString(raw.trim(), scale);
+  const [whole = "0", fraction = ""] = normalized.replace("-", "").split(".");
+  const digits = BigInt(whole + fraction.padEnd(scale, "0").slice(0, scale));
+  return normalized.startsWith("-") ? -digits : digits;
+}

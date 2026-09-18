@@ -7,6 +7,9 @@ export * from "./core.js";
 export * from "./finance.js";
 export * from "./hr.js";
 export * from "./auth.js";
+export * from "./sbu-kpi.js";
+export * from "./jira.js";
+export * from "./xero.js";
 
 import mongoose from "mongoose";
 
@@ -51,6 +54,16 @@ import {
   EmployeeTask,
   JiraTaskCache,
 } from "./hr.js";
+import { SbuKpiReading, SbuKpiReadingHistory, SbuKpiDispatch } from "./sbu-kpi.js";
+import { JiraProjectLink, JiraIssueLink, JiraSync } from "./jira.js";
+import {
+  XeroConnection,
+  XeroSyncState,
+  XeroStatement,
+  XeroInvoice,
+  XeroContact,
+  XeroPushQueue,
+} from "./xero.js";
 
 /**
  * Every model, in dependency order (parents before children).
@@ -96,6 +109,27 @@ export const ALL_MODELS = [
   AttendanceRecord,
   EmployeeTask,
   JiraTaskCache,
+  // Group SBU reporting. Listed before the cross-cutting models so the
+  // reverse-order drop in resetDatabase() removes the history and dispatch
+  // rows before the readings they reference.
+  SbuKpiReading,
+  SbuKpiReadingHistory,
+  SbuKpiDispatch,
+  // Jira linkage. After Project and Task, which the links reference, so the
+  // reverse-order drop in resetDatabase() clears the links before their
+  // targets.
+  JiraProjectLink,
+  JiraIssueLink,
+  JiraSync,
+  // Xero integration. Listed after the finance models it references and
+  // before the cross-cutting ones, so the reverse-order drop in
+  // resetDatabase() clears the sync state before the ledger it points at.
+  XeroConnection,
+  XeroSyncState,
+  XeroStatement,
+  XeroInvoice,
+  XeroContact,
+  XeroPushQueue,
   // Cross-cutting
   KpiFeed,
   AiDailyBrief,

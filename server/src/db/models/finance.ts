@@ -10,6 +10,8 @@ import {
   PERCENT_SCALE,
   toDecimal128,
   decimalSetter,
+  decimalToString,
+  computeMarginPct,
 } from "../types.js";
 
 /**
@@ -42,8 +44,34 @@ const financeAccountSchema = new Schema(
      */
     currentBalance: money({ required: true, default: 0 }),
     isActive: { type: Boolean, required: true, default: true },
+
+    /**
+     * Xero linkage. Null for an account that exists only here.
+     *
+     * `xeroAccountId` is Xero's `AccountID` for the corresponding bank
+     * account; `xeroAccountCode` is the human-facing code from the chart of
+     * accounts, kept for display and reconciliation. A linked account still
+     * carries its own `openingBalance` — Xero's balance is not imported as
+     * an opening figure, because doing that alongside the transaction pull
+     * would double-count every historical entry.
+     */
+    xeroAccountId: { type: String, default: null },
+    xeroAccountCode: { type: String, default: null },
+    xeroSyncedAt: { type: Date, default: null },
   },
   createdAtOnly,
+);
+
+// Partial + unique: at most one local account per Xero account, while any
+// number of unlinked accounts keep a null value. A plain unique index would
+// reject the second unlinked account, since Mongo treats missing as a value.
+financeAccountSchema.index(
+  { xeroAccountId: 1 },
+  {
+    unique: true,
+    name: "uniq_finance_account_xero",
+    partialFilterExpression: { xeroAccountId: { $type: "string" } },
+  },
 );
 
 export type FinanceAccountDoc = InferSchemaType<typeof financeAccountSchema>;
@@ -58,7 +86,12 @@ export const FinanceAccount: Model<FinanceAccountDoc> = model<FinanceAccountDoc>
 // ---------------------------------------------------------------------------
 
 export const TRANSACTION_TYPES = ["debit", "credit"] as const;
-export const TRANSACTION_SOURCES = ["manual", "excel-import"] as const;
+/**
+ * `xero-sync` marks a row that came DOWN from Xero rather than being typed
+ * here. It is what stops the push service sending it back up — the loop that
+ * would otherwise duplicate every synced entry in the real ledger.
+ */
+export const TRANSACTION_SOURCES = ["manual", "excel-import", "xero-sync"] as const;
 
 const financeTransactionSchema = new Schema(
   {
@@ -94,6 +127,17 @@ const financeTransactionSchema = new Schema(
     },
     source: { type: String, required: true, default: "manual", enum: TRANSACTION_SOURCES },
     /**
+     * Xero's `BankTransactionID` (pulled down) or the id Xero assigned to an
+     * entry we pushed up. Either way it means "this row and that Xero entry
+     * are the same fact", which is what keeps the sync from re-creating it.
+     *
+     * Direction is recoverable from `source`: `xero-sync` came down, anything
+     * else with an id went up.
+     */
+    xeroTransactionId: { type: String, default: null },
+    /** Xero's row version, used to detect an upstream edit on the next pull. */
+    xeroUpdatedAt: { type: Date, default: null },
+    /**
      * Self-reference to the transaction this one offsets. A reversal is a real
      * equal-and-opposite entry, never a delete or a hidden flag (0014), which
      * is what keeps the balance arithmetic free of special cases and the audit
@@ -118,6 +162,22 @@ financeTransactionSchema.index(
   {
     name: "idx_finance_txn_reverses",
     partialFilterExpression: { reversesTransactionId: { $type: "string" } },
+  },
+);
+/**
+ * At most one local row per Xero entry.
+ *
+ * This is the constraint the sync's idempotency actually rests on. The
+ * reconciler upserts on this key, so a pull that runs twice — a retry, an
+ * overlapping cron, a cursor that was not advanced — converges instead of
+ * duplicating. Partial, so the many rows with no Xero id are unaffected.
+ */
+financeTransactionSchema.index(
+  { xeroTransactionId: 1 },
+  {
+    unique: true,
+    name: "uniq_finance_txn_xero",
+    partialFilterExpression: { xeroTransactionId: { $type: "string" } },
   },
 );
 
@@ -176,11 +236,28 @@ const financeCreditorSchema = new Schema(
     dueDate: dateOnly(),
     status: { type: String, required: true, default: "outstanding", enum: CREDITOR_STATUSES },
     notes: { type: String, default: null },
+
+    /**
+     * Set when this creditor was derived from a Xero ACCPAY invoice (a bill).
+     * `amountOwed` then tracks Xero's `AmountDue`, and `status` is mapped from
+     * it rather than edited here — see services/xero/sync-invoices.ts.
+     */
+    xeroInvoiceId: { type: String, default: null },
+    xeroContactId: { type: String, default: null },
+    xeroSyncedAt: { type: Date, default: null },
   },
   timestampOptions,
 );
 
 financeCreditorSchema.index({ status: 1, dueDate: 1 }, { name: "idx_finance_creditors_status_due" });
+financeCreditorSchema.index(
+  { xeroInvoiceId: 1 },
+  {
+    unique: true,
+    name: "uniq_finance_creditor_xero_invoice",
+    partialFilterExpression: { xeroInvoiceId: { $type: "string" } },
+  },
+);
 
 export type FinanceCreditorDoc = InferSchemaType<typeof financeCreditorSchema>;
 export const FinanceCreditor: Model<FinanceCreditorDoc> = model<FinanceCreditorDoc>(
@@ -238,12 +315,20 @@ projectFinanceSchema.index({ projectId: 1 }, { unique: true, name: "uniq_project
  * `v_project_margins` (0003) — margin is derived, never stored, so it cannot
  * drift out of sync with budget/cost. Returns null when budget is absent or
  * zero, matching the view's CASE exactly.
+ *
+ * Delegates to `computeMarginPct` rather than carrying its own arithmetic.
+ * The `/project-finance` endpoint cannot use this virtual — virtuals are not
+ * materialised on a `.lean()` result without the `mongoose-lean-virtuals`
+ * plugin, which this project does not use — so it calls the same function
+ * directly. Two implementations of one formula would agree until the day they
+ * did not, and the disagreement would surface as a margin that differs
+ * depending on which code path rendered it.
  */
 projectFinanceSchema.virtual("marginPct").get(function (this: ProjectFinanceDoc): number | null {
-  const budget = this.budgetUsd === null ? null : Number(this.budgetUsd.toString());
-  const cost = this.costToDateUsd === null ? 0 : Number(this.costToDateUsd.toString());
-  if (budget === null || budget === 0) return null;
-  return Math.round(((budget - cost) / budget) * 100 * 100) / 100;
+  return computeMarginPct(
+    decimalToString(this.budgetUsd),
+    decimalToString(this.costToDateUsd),
+  );
 });
 
 export type ProjectFinanceDoc = InferSchemaType<typeof projectFinanceSchema>;

@@ -2,6 +2,7 @@ import mongoose, { type ClientSession } from "mongoose";
 import { FinanceAccount, FinanceTransaction } from "../../db/models/index.js";
 import {
   MONEY_SCALE,
+  PERCENT_SCALE,
   currentDate,
   decimalToString,
   toDateOnly,
@@ -21,8 +22,17 @@ import {
  * precisely what Decimal128 storage exists to prevent (inventory §10, D-12).
  */
 
-/** Parses a decimal string/Decimal128 into an exact scaled bigint. */
-function toScaled(value: mongoose.Types.Decimal128 | string | number, scale = MONEY_SCALE): bigint {
+/**
+ * Parses a decimal string/Decimal128 into an exact scaled bigint.
+ *
+ * Exported because the report service does the same arithmetic on the same
+ * values, and a second implementation there would be a second rounding
+ * policy — the two would agree until they didn't.
+ */
+export function toScaled(
+  value: mongoose.Types.Decimal128 | string | number,
+  scale = MONEY_SCALE,
+): bigint {
   const raw = decimalToString(toDecimal128(value, scale), scale) ?? "0";
   const [whole = "0", fraction = ""] = raw.replace("-", "").split(".");
   const digits = BigInt(whole + fraction.padEnd(scale, "0").slice(0, scale));
@@ -30,12 +40,46 @@ function toScaled(value: mongoose.Types.Decimal128 | string | number, scale = MO
 }
 
 /** Renders a scaled bigint back to a fixed-point decimal string. */
-function fromScaled(scaled: bigint, scale = MONEY_SCALE): string {
+export function fromScaled(scaled: bigint, scale = MONEY_SCALE): string {
   const negative = scaled < 0n;
   const digits = (negative ? -scaled : scaled).toString().padStart(scale + 1, "0");
   const whole = digits.slice(0, digits.length - scale);
   const fraction = scale > 0 ? `.${digits.slice(digits.length - scale)}` : "";
   return `${negative ? "-" : ""}${whole}${fraction}`;
+}
+
+/** Sums scaled amounts. A named helper purely so the intent is greppable. */
+export function addScaled(...values: bigint[]): bigint {
+  return values.reduce((sum, value) => sum + value, 0n);
+}
+
+/**
+ * `amount × percent / 100`, exactly, at money scale.
+ *
+ * Both operands are scaled integers, so the product carries
+ * MONEY_SCALE + PERCENT_SCALE decimal places and must be divided back down.
+ * The division rounds half-up to match Postgres `numeric` rounding, which is
+ * what the stored column would have done.
+ *
+ * The float64 version of this (`amount * (pct / 100)`) was the worst
+ * arithmetic in the legacy reports: it rounded twice per row and accumulated
+ * across the period, so a DLAP partner's share drifted from the sum of the
+ * individual entitlements it is supposed to represent.
+ */
+export function mulScaledByPercent(
+  amountScaled: bigint,
+  percent: mongoose.Types.Decimal128 | string | number,
+): bigint {
+  const percentScaled = toScaled(percent, PERCENT_SCALE);
+  const divisor = 100n * 10n ** BigInt(PERCENT_SCALE);
+
+  const product = amountScaled * percentScaled;
+  const negative = product < 0n;
+  const magnitude = negative ? -product : product;
+
+  // Half-up: add half the divisor before truncating.
+  const rounded = (magnitude + divisor / 2n) / divisor;
+  return negative ? -rounded : rounded;
 }
 
 /**

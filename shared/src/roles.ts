@@ -101,16 +101,32 @@ export const EXEC_ONLY: readonly UserRole[] = ["admin", "exec"];
 export const ADMIN_ONLY: readonly UserRole[] = ["admin"];
 
 /**
- * Roles required to hold a verified TOTP factor.
+ * Roles that would be required to hold a verified TOTP factor.
  * Ported from lib/supabase/mfa.ts — admin and exec are deliberately excluded
  * (see the comment in lib/supabase/server.ts).
+ *
+ * This is the policy, not the switch: read MFA_REQUIRED_ROLES below, which is
+ * empty while MFA is disabled.
  */
-export const MFA_REQUIRED_ROLES: readonly UserRole[] = [
+export const MFA_POLICY_ROLES: readonly UserRole[] = [
   "finance_officer",
   "finance_manager",
   "hr_officer",
   "hr_manager",
 ];
+
+/**
+ * MFA is currently DISABLED across the app. Every gate reads
+ * `MFA_REQUIRED_ROLES`, so emptying it turns off enrollment prompts, the
+ * `requireMfa` middleware and the client-side redirects in one place.
+ *
+ * To turn MFA back on, set MFA_ENABLED=true in the server environment (or
+ * simply export MFA_POLICY_ROLES here again). The enroll/verify routes,
+ * services and models are all left intact — nothing was deleted.
+ */
+export const MFA_ENABLED = false;
+
+export const MFA_REQUIRED_ROLES: readonly UserRole[] = MFA_ENABLED ? MFA_POLICY_ROLES : [];
 
 /**
  * Per-role landing route. Ported verbatim from lib/role-home.ts.
@@ -134,3 +150,25 @@ export function roleHomePath(role: UserRole): string {
       return "/projects";
   }
 }
+
+/**
+ * Month-end capture of the Group KPI register.
+ *
+ * Wider than EXEC_ONLY on purpose: §9 of the Group's KPI & Ingestion
+ * Specification describes the 41 manual measures as typed in by "Dokuma's own
+ * finance and operations people" as part of the month-end routine. Gating
+ * capture on exec would mean the only people permitted to enter the figures are
+ * the people the figures are for — impractical, and poor separation of duties.
+ *
+ * READING the board view stays EXEC_ONLY. This widens who may write, not who
+ * may see. Both the Express route and the client route guard read this constant,
+ * so the gate cannot drift between them.
+ */
+export const GROUP_CAPTURE: readonly UserRole[] = [
+  "admin",
+  "exec",
+  "finance_officer",
+  "finance_manager",
+  "hr_officer",
+  "hr_manager",
+];
